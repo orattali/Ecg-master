@@ -17,6 +17,10 @@
         .correct { background-color: #22c55e !important; color: white !important; border-color: #16a34a !important; }
         .wrong { background-color: #ef4444 !important; color: white !important; border-color: #dc2626 !important; }
         .hidden { display: none; }
+        
+        /* סגנון לפס הטעינה */
+        .progress-container { width: 100%; background-color: #e2e8f0; border-radius: 999px; height: 12px; overflow: hidden; }
+        #progress-bar { width: 0%; background: linear-gradient(90deg, #3b82f6, #8b5cf6); height: 100%; transition: width 0.3s ease; }
     </style>
 </head>
 <body class="p-2 md:p-6">
@@ -25,21 +29,31 @@
         <div id="upload-card" class="bg-white rounded-3xl shadow-xl p-8 text-center border-t-8 border-blue-600">
             <i class="fas fa-heart-pulse text-6xl text-rose-500 mb-4"></i>
             <h1 class="text-3xl font-black text-slate-800 mb-2">סימולטור אק"ג אמריקאי</h1>
-            <p class="text-slate-500 mb-8 font-bold">העלה את קובץ ה-Word עם 150 הסטריפים כדי להתחיל</p>
+            <p class="text-slate-500 mb-8 font-bold">העלה את קובץ ה-Word עם הסטריפים כדי להתחיל</p>
             
             <div id="drop-zone" class="border-4 border-dashed border-slate-200 rounded-2xl py-12 px-4 mb-6 cursor-pointer hover:border-blue-400 transition-colors" onclick="document.getElementById('docx-file').click()">
-                <p class="text-slate-400 mb-4">לחץ כאן לבחירת הקובץ מהטאבלט</p>
+                <p class="text-slate-400 mb-4 text-lg">לחץ כאן לבחירת קובץ הסטריפים</p>
                 <input type="file" id="docx-file" accept=".docx" class="hidden" onchange="processDocx(event)">
                 <span class="bg-blue-600 text-white px-8 py-3 rounded-full font-bold shadow-lg">בחר קובץ DOCX</span>
             </div>
-            <p id="loading-status" class="text-blue-600 font-bold hidden">מעבד את הסטריפים... זה עשוי לקחת כמה שניות</p>
+
+            <div id="loading-area" class="hidden space-y-3">
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-blue-600 font-bold">מעבד נתונים...</span>
+                    <span id="load-percentage" class="text-blue-600 font-black">0%</span>
+                </div>
+                <div class="progress-container">
+                    <div id="progress-bar"></div>
+                </div>
+                <p class="text-xs text-slate-400">מחלץ תמונות ופענוחים מהקובץ</p>
+            </div>
         </div>
 
         <div id="game-card" class="hidden space-y-4">
-            <div class="bg-white p-4 rounded-2xl shadow flex justify-between items-center">
-                <div class="text-lg font-black">ציון: <span id="score" class="text-blue-600">0%</span></div>
-                <div class="text-sm text-slate-500" id="progress-text">סטריפ 1 מתוך ...</div>
-                <button onclick="location.reload()" class="text-xs bg-slate-200 px-3 py-1 rounded-lg">טען קובץ מחדש</button>
+            <div class="bg-white p-4 rounded-2xl shadow flex justify-between items-center border-b-4 border-blue-100">
+                <div class="text-lg font-black text-slate-700">דיוק: <span id="score" class="text-blue-600">0%</span></div>
+                <div class="text-sm font-bold text-slate-500" id="progress-text">טוען...</div>
+                <button onclick="location.reload()" class="text-xs bg-slate-100 hover:bg-slate-200 px-3 py-1 rounded-lg border">החלף קובץ</button>
             </div>
 
             <div class="monitor-bg">
@@ -48,9 +62,9 @@
 
             <div id="options-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
 
-            <div id="feedback-panel" class="hidden bg-white p-6 rounded-2xl shadow-xl border-2 border-slate-200 animate-bounce-in">
+            <div id="feedback-panel" class="hidden bg-white p-6 rounded-2xl shadow-2xl border-2 border-slate-200">
                 <h2 id="feedback-title" class="text-2xl font-black mb-2"></h2>
-                <div id="clinical-info" class="text-slate-700 bg-slate-50 p-4 rounded-xl mb-4 text-sm"></div>
+                <div id="clinical-info" class="text-slate-700 bg-slate-50 p-4 rounded-xl mb-4 text-sm border-r-4 border-blue-400"></div>
                 <button onclick="loadNextQuestion()" class="w-full bg-slate-900 text-white py-5 rounded-2xl font-black text-xl shadow-lg active:scale-95 transition-transform">לסטריפ הבא >></button>
             </div>
         </div>
@@ -65,15 +79,30 @@
             const file = event.target.files[0];
             if (!file) return;
 
-            document.getElementById('loading-status').classList.remove('hidden');
+            // הצגת פס הטעינה
+            document.getElementById('drop-zone').classList.add('hidden');
+            document.getElementById('loading-area').classList.remove('hidden');
             
             const reader = new FileReader();
             reader.onload = async (e) => {
                 const arrayBuffer = e.target.result;
-                const result = await mammoth.convertToHtml({ arrayBuffer });
-                parseHTML(result.value);
+                try {
+                    // עדכון התחלה
+                    updateProgress(20);
+                    const result = await mammoth.convertToHtml({ arrayBuffer });
+                    updateProgress(50);
+                    parseHTML(result.value);
+                } catch (err) {
+                    alert("שגיאה בקריאת הקובץ");
+                    location.reload();
+                }
             };
             reader.readAsArrayBuffer(file);
+        }
+
+        function updateProgress(val) {
+            document.getElementById('progress-bar').style.width = val + '%';
+            document.getElementById('load-percentage').innerText = val + '%';
         }
 
         function parseHTML(html) {
@@ -81,8 +110,17 @@
             container.innerHTML = html;
             const items = [];
             let currentItem = null;
+            
+            const elements = Array.from(container.children);
+            const totalElements = elements.length;
 
-            Array.from(container.children).forEach(el => {
+            elements.forEach((el, index) => {
+                // עדכון אחוזים בזמן אמת לפי סריקת האלמנטים
+                if (index % 10 === 0) {
+                    let calcProgress = 50 + Math.round((index / totalElements) * 50);
+                    updateProgress(calcProgress);
+                }
+
                 const img = el.querySelector('img') || (el.tagName === 'IMG' ? el : null);
                 if (img) {
                     if (currentItem) items.push(currentItem);
@@ -97,24 +135,28 @@
                     }
                 }
             });
+            
             if (currentItem) items.push(currentItem);
+            updateProgress(100);
 
             quizData = items.filter(i => i.img && i.answer);
             allAnswersList = [...new Set(quizData.map(i => i.answer))];
 
-            if (quizData.length > 0) {
-                document.getElementById('upload-card').classList.add('hidden');
-                document.getElementById('game-card').classList.remove('hidden');
-                loadNextQuestion();
-            } else {
-                alert("לא הצלחתי למצוא סטריפים עם התיוג 'הפרעת קצב:'. וודא שהקובץ תקין.");
-                location.reload();
-            }
+            setTimeout(() => {
+                if (quizData.length > 0) {
+                    document.getElementById('upload-card').classList.add('hidden');
+                    document.getElementById('game-card').classList.remove('hidden');
+                    loadNextQuestion();
+                } else {
+                    alert("לא נמצאו סטריפים תקינים עם הטקסט 'הפרעת קצב:'");
+                    location.reload();
+                }
+            }, 500);
         }
 
         function loadNextQuestion() {
             if (quizData.length === 0) {
-                alert("כל הכבוד! סיימת את כל הסטריפים במאגר.");
+                alert("סיימת את כל הסטריפים!");
                 location.reload();
                 return;
             }
@@ -122,12 +164,10 @@
             const qIdx = Math.floor(Math.random() * quizData.length);
             const question = quizData[qIdx];
             
-            // איפוס UI
             document.getElementById('feedback-panel').classList.add('hidden');
             document.getElementById('ecg-container').innerHTML = `<img src="${question.img}" class="strip-img">`;
-            document.getElementById('progress-text').innerText = `נותרו עוד ${quizData.length} סטריפים`;
+            document.getElementById('progress-text').innerText = `נותרו: ${quizData.length}`;
 
-            // בניית תשובות
             let options = [question.answer];
             let distractors = allAnswersList.filter(a => a !== question.answer);
             distractors = distractors.sort(() => 0.5 - Math.random()).slice(0, 3);
@@ -154,25 +194,23 @@
             if (isCorrect) {
                 stats.correct++;
                 btn.classList.add('correct');
-                document.getElementById('feedback-title').innerText = "בינגו! תשובה נכונה 🩺";
+                document.getElementById('feedback-title').innerText = "נכון מאוד! 🎯";
                 document.getElementById('feedback-title').className = "text-2xl font-black mb-2 text-green-600";
-                confetti({ particleCount: 40, spread: 50, origin: { y: 0.8 } });
+                confetti({ particleCount: 30, spread: 50 });
             } else {
                 btn.classList.add('wrong');
-                document.getElementById('feedback-title').innerText = "לא מדויק... 🚑";
+                document.getElementById('feedback-title').innerText = "טעות... לא נורא";
                 document.getElementById('feedback-title').className = "text-2xl font-black mb-2 text-red-600";
                 btns.forEach(b => { if(b.innerText === correctObj.answer) b.classList.add('correct'); });
             }
 
             document.getElementById('clinical-info').innerHTML = `
-                <div class="font-black text-blue-800 mb-1">פענוח: ${correctObj.answer}</div>
-                ${correctObj.details.map(d => `<div>• ${d}</div>`).join('')}
+                <div class="font-black text-blue-800 text-lg mb-1">${correctObj.answer}</div>
+                ${correctObj.details.map(d => `<div class="py-0.5">• ${d}</div>`).join('')}
             `;
             
             document.getElementById('feedback-panel').classList.remove('hidden');
             document.getElementById('score').innerText = Math.round((stats.correct / stats.total) * 100) + "%";
-            
-            // הסרת השאלה מהמאגר כדי שלא תחזור על עצמה
             quizData.splice(qIdx, 1);
         }
     </script>
