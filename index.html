@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מאסטר האק"ג - גרסת המבחן האמריקאי</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        monitor: { bg: '#020617', grid: '#0f766e', line: '#34d399' }
+                    },
+                    animation: {
+                        'heartbeat': 'heartbeat 1.2s ease-in-out infinite',
+                        'pop-in': 'popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
+                    },
+                    keyframes: {
+                        heartbeat: { '0%, 100%': { transform: 'scale(1)' }, '15%': { transform: 'scale(1.2)' }, '30%': { transform: 'scale(1)' } },
+                        popIn: { '0%': { opacity: '0', transform: 'scale(0.8)' }, '100%': { opacity: '1', transform: 'scale(1)' } }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background: linear-gradient(120deg, #fcd34d 0%, #f472b6 50%, #38bdf8 100%); background-attachment: fixed; min-height: 100vh; font-family: system-ui, -apple-system, sans-serif; }
+        .glass-panel { background: rgba(254, 243, 199, 0.9); backdrop-filter: blur(15px); border: 3px solid #fb923c; box-shadow: 0 25px 50px rgba(0,0,0,0.2); }
+        .monitor-screen { background-color: #020617; border: 6px solid #334155; border-radius: 1.5rem; position: relative; overflow: hidden; }
+        .strip-image { width: 100%; max-height: 250px; object-fit: contain; background: #fff; border-radius: 0.5rem; padding: 5px; }
+        .option-btn { transition: all 0.2s; border: 2px solid transparent; }
+        .option-btn:disabled { cursor: default; }
+    </style>
+</head>
+<body class="p-4 pt-20">
+
+    <div id="top-bar" class="hidden fixed top-0 left-0 w-full z-50 bg-slate-900 border-b-4 border-fuchsia-500 py-3 px-6 flex justify-between items-center shadow-2xl">
+        <div class="text-white font-black text-xl">ציון: <span id="score-display" class="text-green-400">100%</span></div>
+        <div class="bg-yellow-400 text-slate-900 px-4 py-1 rounded-full font-black animate-bounce">קפ"ע 16</div>
+        <button onclick="location.reload()" class="text-white text-sm bg-red-600 px-3 py-1 rounded-lg">איפוס</button>
+    </div>
+
+    <div id="app-container" class="glass-panel rounded-3xl w-full max-w-4xl mx-auto overflow-hidden">
+        <div class="bg-gradient-to-r from-rose-500 to-indigo-600 text-white text-center py-6">
+            <h1 class="text-3xl md:text-5xl font-black">מאסטר האק"ג - אמריקאי</h1>
+        </div>
+
+        <div class="p-4 md:p-8">
+            <div id="start-screen" class="text-center py-10">
+                <i class="fas fa-file-word text-6xl text-blue-600 mb-4"></i>
+                <h2 class="text-2xl font-bold mb-6">העלה את קובץ התרגול (DOCX)</h2>
+                <input type="file" id="docx-upload" accept=".docx" class="hidden" onchange="handleFileUpload(event)">
+                <button onclick="document.getElementById('docx-upload').click()" class="bg-blue-600 text-white px-10 py-4 rounded-full text-xl font-black shadow-lg hover:bg-blue-700">בחר קובץ והתחל</button>
+            </div>
+
+            <div id="game-screen" class="hidden flex flex-col gap-6">
+                <div class="monitor-screen p-4">
+                    <div id="question-display" class="flex justify-center"></div>
+                </div>
+
+                <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    </div>
+
+                <div id="feedback-area" class="hidden animate-pop-in bg-white p-6 rounded-2xl border-4 border-slate-800 shadow-xl">
+                    <h3 id="feedback-title" class="text-2xl font-black mb-2"></h3>
+                    <p id="correct-answer-text" class="text-lg font-bold text-slate-700 mb-4"></p>
+                    <div id="clinical-data" class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm mb-4 bg-slate-100 p-3 rounded-lg"></div>
+                    <button onclick="nextQuestion()" class="w-full bg-indigo-600 text-white py-4 rounded-xl text-xl font-black hover:bg-indigo-700 shadow-lg">לשאלה הבאה >></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let db = [];
+        let stats = { total: 0, correct: 0 };
+        let currentIdx = 0;
+        let allAnswers = [];
+
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            const arrayBuffer = await file.arrayBuffer();
+            const result = await mammoth.convertToHtml({arrayBuffer});
+            processHTML(result.value);
+        }
+
+        function processHTML(html) {
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+            let tempItem = { image: null, answer: "", details: [] };
+            
+            Array.from(doc.body.children).forEach(el => {
+                const img = el.querySelector('img') || (el.tagName === 'IMG' ? el : null);
+                if (img) {
+                    if(tempItem.image || tempItem.answer) db.push({...tempItem});
+                    tempItem = { image: img.src, answer: "", details: [] };
+                }
+                const text = el.textContent.trim();
+                if(text.includes("הפרעת קצב:")) {
+                    tempItem.answer = text.split("הפרעת קצב:")[1].replace(/^:\s*/, '').trim();
+                } else if (/(קצב|גל|מרווח|QRS|ציר)/.test(text)) {
+                    tempItem.details.push(text);
+                }
+            });
+            db.push(tempItem);
+            db = db.filter(item => item.answer);
+            allAnswers = [...new Set(db.map(item => item.answer))];
+            
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('top-bar').classList.remove('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+            nextQuestion();
+        }
+
+        function nextQuestion() {
+            if(db.length === 0) return alert("הסתיים המאגר!");
+            const qIdx = Math.floor(Math.random() * db.length);
+            const q = db[qIdx];
+            
+            document.getElementById('question-display').innerHTML = `<img src="${q.image}" class="strip-image">`;
+            document.getElementById('feedback-area').classList.add('hidden');
+            
+            // Generate 4 options
+            let options = [q.answer];
+            let distractors = allAnswers.filter(a => a !== q.answer);
+            distractors = distractors.sort(() => 0.5 - Math.random()).slice(0, 3);
+            options = [...options, ...distractors].sort(() => 0.5 - Math.random());
+
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = "option-btn bg-white p-4 rounded-xl shadow font-bold text-lg text-slate-800 border-2 hover:bg-yellow-50";
+                btn.innerText = opt;
+                btn.onclick = () => checkAnswer(btn, opt, q);
+                container.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(selectedBtn, choice, question) {
+            const btns = document.querySelectorAll('.option-btn');
+            btns.forEach(b => b.disabled = true);
+            
+            stats.total++;
+            const isCorrect = choice === question.answer;
+            
+            if(isCorrect) {
+                stats.correct++;
+                selectedBtn.classList.replace('bg-white', 'bg-green-500');
+                selectedBtn.classList.add('text-white', 'border-green-700');
+                document.getElementById('feedback-title').innerText = "כל הכבוד! נכון מאוד 🏆";
+                document.getElementById('feedback-title').className = "text-2xl font-black mb-2 text-green-600";
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            } else {
+                selectedBtn.classList.replace('bg-white', 'bg-red-500');
+                selectedBtn.classList.add('text-white', 'border-red-700');
+                document.getElementById('feedback-title').innerText = "אופס... טעות 🚑";
+                document.getElementById('feedback-title').className = "text-2xl font-black mb-2 text-red-600";
+                // Highlight correct answer
+                btns.forEach(b => {
+                    if(b.innerText === question.answer) b.classList.add('ring-4', 'ring-green-400', 'bg-green-100');
+                });
+            }
+
+            // Update UI
+            document.getElementById('correct-answer-text').innerText = "הפענוח: " + question.answer;
+            const detailsDiv = document.getElementById('clinical-data');
+            detailsDiv.innerHTML = question.details.map(d => `<div>• ${d}</div>`).join('');
+            document.getElementById('feedback-area').classList.remove('hidden');
+            
+            const pct = Math.round((stats.correct / stats.total) * 100);
+            document.getElementById('score-display').innerText = pct + "%";
+        }
+    </script>
+</body>
+</html>
