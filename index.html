@@ -17,10 +17,8 @@
         .correct { background-color: #22c55e !important; color: white !important; border-color: #16a34a !important; }
         .wrong { background-color: #ef4444 !important; color: white !important; border-color: #dc2626 !important; }
         .hidden { display: none; }
-        
-        /* סגנון לפס הטעינה */
         .progress-container { width: 100%; background-color: #e2e8f0; border-radius: 999px; height: 12px; overflow: hidden; }
-        #progress-bar { width: 0%; background: linear-gradient(90deg, #3b82f6, #8b5cf6); height: 100%; transition: width 0.3s ease; }
+        #progress-bar { width: 0%; background: linear-gradient(90deg, #3b82f6, #8b5cf6); height: 100%; transition: width 0.1s ease; }
     </style>
 </head>
 <body class="p-2 md:p-6">
@@ -45,15 +43,22 @@
                 <div class="progress-container">
                     <div id="progress-bar"></div>
                 </div>
-                <p class="text-xs text-slate-400">מחלץ תמונות ופענוחים מהקובץ</p>
+                <p class="text-xs text-slate-400">מחלץ תמונות ופענוחים מהקובץ...</p>
             </div>
         </div>
 
         <div id="game-card" class="hidden space-y-4">
             <div class="bg-white p-4 rounded-2xl shadow flex justify-between items-center border-b-4 border-blue-100">
+                <div class="flex gap-2">
+                    <button id="prev-btn" onclick="loadPreviousQuestion()" class="text-xs bg-slate-800 text-white px-3 py-1 rounded-lg opacity-50 cursor-not-allowed" disabled>
+                        <i class="fas fa-arrow-right ml-1"></i> הקודם
+                    </button>
+                    <button onclick="skipQuestion()" class="text-xs bg-amber-500 text-white px-3 py-1 rounded-lg hover:bg-amber-600">
+                        דלג <i class="fas fa-forward mr-1"></i>
+                    </button>
+                </div>
+                <div class="text-sm font-bold text-slate-500" id="progress-text"></div>
                 <div class="text-lg font-black text-slate-700">דיוק: <span id="score" class="text-blue-600">0%</span></div>
-                <div class="text-sm font-bold text-slate-500" id="progress-text">טוען...</div>
-                <button onclick="location.reload()" class="text-xs bg-slate-100 hover:bg-slate-200 px-3 py-1 rounded-lg border">החלף קובץ</button>
             </div>
 
             <div class="monitor-bg">
@@ -72,6 +77,8 @@
 
     <script>
         let quizData = [];
+        let history = []; // שמירת שאלות שכבר ענינו עליהן
+        let currentQuestionIndex = -1;
         let allAnswersList = [];
         let stats = { correct: 0, total: 0 };
 
@@ -79,7 +86,6 @@
             const file = event.target.files[0];
             if (!file) return;
 
-            // הצגת פס הטעינה
             document.getElementById('drop-zone').classList.add('hidden');
             document.getElementById('loading-area').classList.remove('hidden');
             
@@ -87,11 +93,10 @@
             reader.onload = async (e) => {
                 const arrayBuffer = e.target.result;
                 try {
-                    // עדכון התחלה
-                    updateProgress(20);
+                    updateProgress(10);
                     const result = await mammoth.convertToHtml({ arrayBuffer });
-                    updateProgress(50);
-                    parseHTML(result.value);
+                    updateProgress(30);
+                    await parseHTMLAsync(result.value);
                 } catch (err) {
                     alert("שגיאה בקריאת הקובץ");
                     location.reload();
@@ -105,28 +110,25 @@
             document.getElementById('load-percentage').innerText = val + '%';
         }
 
-        function parseHTML(html) {
+        async function parseHTMLAsync(html) {
             const container = document.createElement('div');
             container.innerHTML = html;
             const items = [];
             let currentItem = null;
-            
             const elements = Array.from(container.children);
-            const totalElements = elements.length;
 
-            elements.forEach((el, index) => {
-                // עדכון אחוזים בזמן אמת לפי סריקת האלמנטים
-                if (index % 10 === 0) {
-                    let calcProgress = 50 + Math.round((index / totalElements) * 50);
-                    updateProgress(calcProgress);
+            for (let i = 0; i < elements.length; i++) {
+                if (i % 5 === 0) {
+                    updateProgress(30 + Math.round((i / elements.length) * 70));
+                    await new Promise(r => setTimeout(r, 1));
                 }
 
-                const img = el.querySelector('img') || (el.tagName === 'IMG' ? el : null);
+                const img = elements[i].querySelector('img') || (elements[i].tagName === 'IMG' ? elements[i] : null);
                 if (img) {
                     if (currentItem) items.push(currentItem);
                     currentItem = { img: img.src, answer: "", details: [] };
                 }
-                const text = el.textContent.trim();
+                const text = elements[i].textContent.trim();
                 if (currentItem && text) {
                     if (text.includes("הפרעת קצב:")) {
                         currentItem.answer = text.split("הפרעת קצב:")[1].trim();
@@ -134,43 +136,45 @@
                         currentItem.details.push(text);
                     }
                 }
-            });
-            
+            }
             if (currentItem) items.push(currentItem);
-            updateProgress(100);
-
+            
             quizData = items.filter(i => i.img && i.answer);
             allAnswersList = [...new Set(quizData.map(i => i.answer))];
 
-            setTimeout(() => {
-                if (quizData.length > 0) {
-                    document.getElementById('upload-card').classList.add('hidden');
-                    document.getElementById('game-card').classList.remove('hidden');
-                    loadNextQuestion();
-                } else {
-                    alert("לא נמצאו סטריפים תקינים עם הטקסט 'הפרעת קצב:'");
-                    location.reload();
-                }
-            }, 500);
+            if (quizData.length > 0) {
+                document.getElementById('upload-card').classList.add('hidden');
+                document.getElementById('game-card').classList.remove('hidden');
+                loadNextQuestion();
+            }
         }
 
         function loadNextQuestion() {
             if (quizData.length === 0) {
-                alert("סיימת את כל הסטריפים!");
+                alert("סיימת את כל המאגר!");
                 location.reload();
                 return;
             }
 
-            const qIdx = Math.floor(Math.random() * quizData.length);
-            const question = quizData[qIdx];
+            // בחירת שאלה אקראית
+            const idx = Math.floor(Math.random() * quizData.length);
+            const question = quizData.splice(idx, 1)[0]; // הסרה מהמאגר
             
+            history.push(question); // הוספה להיסטוריה
+            currentQuestionIndex = history.length - 1;
+            
+            renderQuestion(question);
+            updateNavButtons();
+        }
+
+        function renderQuestion(question) {
             document.getElementById('feedback-panel').classList.add('hidden');
             document.getElementById('ecg-container').innerHTML = `<img src="${question.img}" class="strip-img">`;
-            document.getElementById('progress-text').innerText = `נותרו: ${quizData.length}`;
+            document.getElementById('progress-text').innerText = `נותרו במאגר: ${quizData.length}`;
 
             let options = [question.answer];
-            let distractors = allAnswersList.filter(a => a !== question.answer);
-            distractors = distractors.sort(() => 0.5 - Math.random()).slice(0, 3);
+            let distractors = allAnswersList.filter(a => a !== question.answer)
+                .sort(() => 0.5 - Math.random()).slice(0, 3);
             options = [...options, ...distractors].sort(() => 0.5 - Math.random());
 
             const grid = document.getElementById('options-grid');
@@ -179,12 +183,12 @@
                 const btn = document.createElement('button');
                 btn.className = "option-btn bg-white p-4 rounded-xl font-bold text-slate-800 shadow-sm";
                 btn.innerText = opt;
-                btn.onclick = () => checkResult(btn, opt, question, qIdx);
+                btn.onclick = () => checkResult(btn, opt, question);
                 grid.appendChild(btn);
             });
         }
 
-        function checkResult(btn, selected, correctObj, qIdx) {
+        function checkResult(btn, selected, correctObj) {
             const btns = document.querySelectorAll('.option-btn');
             btns.forEach(b => b.disabled = true);
             
@@ -194,12 +198,12 @@
             if (isCorrect) {
                 stats.correct++;
                 btn.classList.add('correct');
-                document.getElementById('feedback-title').innerText = "נכון מאוד! 🎯";
+                document.getElementById('feedback-title').innerText = "נכון מאוד!";
                 document.getElementById('feedback-title').className = "text-2xl font-black mb-2 text-green-600";
-                confetti({ particleCount: 30, spread: 50 });
+                confetti({ particleCount: 30 });
             } else {
                 btn.classList.add('wrong');
-                document.getElementById('feedback-title').innerText = "טעות... לא נורא";
+                document.getElementById('feedback-title').innerText = "טעות...";
                 document.getElementById('feedback-title').className = "text-2xl font-black mb-2 text-red-600";
                 btns.forEach(b => { if(b.innerText === correctObj.answer) b.classList.add('correct'); });
             }
@@ -211,7 +215,36 @@
             
             document.getElementById('feedback-panel').classList.remove('hidden');
             document.getElementById('score').innerText = Math.round((stats.correct / stats.total) * 100) + "%";
-            quizData.splice(qIdx, 1);
+        }
+
+        function skipQuestion() {
+            // במידה ומדלגים, אנחנו מחזירים את השאלה הנוכחית לסוף המערך כדי שתחזור מתישהו
+            if (currentQuestionIndex > -1) {
+                const currentQ = history.pop();
+                quizData.push(currentQ);
+            }
+            loadNextQuestion();
+        }
+
+        function loadPreviousQuestion() {
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                const prevQ = history[currentQuestionIndex];
+                renderQuestion(prevQ);
+                updateNavButtons();
+            }
+        }
+
+        function updateNavButtons() {
+            const prevBtn = document.getElementById('prev-btn');
+            if (currentQuestionIndex > 0) {
+                prevBtn.disabled = false;
+                prevBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                prevBtn.classList.add('hover:bg-slate-700');
+            } else {
+                prevBtn.disabled = true;
+                prevBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
         }
     </script>
 </body>
