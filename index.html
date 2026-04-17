@@ -10,7 +10,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
     <style>
         body { background: #f1f5f9; min-height: 100vh; font-family: system-ui, sans-serif; }
-        .monitor-bg { background-color: #020617; border-radius: 1rem; position: relative; overflow: hidden; border: 4px solid #1e293b; }
+        .monitor-bg { background-color: #020617; border-radius: 1rem; position: relative; overflow: hidden; border: 4px solid #1e293b; min-height: 200px; display: flex; align-items: center; justify-content: center; }
         .strip-img { width: 100%; max-height: 350px; object-fit: contain; background: white; padding: 4px; }
         .option-btn { transition: all 0.2s; border: 2px solid #e2e8f0; text-align: right; }
         .option-btn:hover:not(:disabled) { border-color: #3b82f6; background-color: #eff6ff; }
@@ -18,7 +18,7 @@
         .wrong { background-color: #ef4444 !important; color: white !important; border-color: #dc2626 !important; }
         .hidden { display: none; }
         .progress-container { width: 100%; background-color: #e2e8f0; border-radius: 999px; height: 12px; overflow: hidden; }
-        #progress-bar { width: 0%; background: linear-gradient(90deg, #3b82f6, #8b5cf6); height: 100%; transition: width 0.1s ease; }
+        #progress-bar { width: 0%; background: linear-gradient(90deg, #3b82f6, #8b5cf6); height: 100%; transition: width 0.2s linear; }
     </style>
 </head>
 <body class="p-2 md:p-6">
@@ -26,61 +26,74 @@
     <div class="max-w-4xl mx-auto">
         <div id="upload-card" class="bg-white rounded-3xl shadow-xl p-8 text-center border-t-8 border-blue-600">
             <i class="fas fa-heart-pulse text-6xl text-rose-500 mb-4"></i>
-            <h1 class="text-3xl font-black text-slate-800 mb-2">סימולטור אק"ג אמריקאי</h1>
-            <p class="text-slate-500 mb-8 font-bold">העלה את קובץ ה-Word עם הסטריפים כדי להתחיל</p>
+            <h1 class="text-3xl font-black text-slate-800 mb-2">סימולטור אק"ג לפרמדיקים</h1>
+            <p class="text-slate-500 mb-8 font-bold">העלו קובץ Word הכולל תמונות והטקסט "הפרעת קצב:"</p>
             
             <div id="drop-zone" class="border-4 border-dashed border-slate-200 rounded-2xl py-12 px-4 mb-6 cursor-pointer hover:border-blue-400 transition-colors" onclick="document.getElementById('docx-file').click()">
-                <p class="text-slate-400 mb-4 text-lg">לחץ כאן לבחירת קובץ הסטריפים</p>
+                <p class="text-slate-400 mb-4 text-lg font-bold">לחץ כאן לבחירת קובץ DOCX</p>
                 <input type="file" id="docx-file" accept=".docx" class="hidden" onchange="processDocx(event)">
-                <span class="bg-blue-600 text-white px-8 py-3 rounded-full font-bold shadow-lg">בחר קובץ DOCX</span>
+                <span class="bg-blue-600 text-white px-8 py-3 rounded-full font-bold shadow-lg hover:bg-blue-700 transition-colors">בחר קובץ מהמחשב</span>
             </div>
 
-            <div id="loading-area" class="hidden space-y-3">
+            <div id="loading-area" class="hidden space-y-4 py-4">
                 <div class="flex justify-between items-center mb-1">
-                    <span class="text-blue-600 font-bold">מעבד נתונים...</span>
+                    <span class="text-blue-600 font-bold">מנתח את הסטריפים...</span>
                     <span id="load-percentage" class="text-blue-600 font-black">0%</span>
                 </div>
                 <div class="progress-container">
                     <div id="progress-bar"></div>
                 </div>
-                <p class="text-xs text-slate-400">מחלץ תמונות ופענוחים מהקובץ...</p>
+                <p class="text-sm text-slate-400">מיד מתחילים, נא לא לרענן את הדף</p>
             </div>
         </div>
 
         <div id="game-card" class="hidden space-y-4">
-            <div class="bg-white p-4 rounded-2xl shadow flex justify-between items-center border-b-4 border-blue-100">
+            <div class="bg-white p-4 rounded-2xl shadow flex flex-wrap gap-3 justify-between items-center border-b-4 border-blue-100">
                 <div class="flex gap-2">
-                    <button id="prev-btn" onclick="loadPreviousQuestion()" class="text-xs bg-slate-800 text-white px-3 py-1 rounded-lg opacity-50 cursor-not-allowed" disabled>
-                        <i class="fas fa-arrow-right ml-1"></i> הקודם
+                    <button id="prev-btn" onclick="loadPreviousQuestion()" class="flex items-center gap-2 bg-slate-100 text-slate-700 px-4 py-2 rounded-xl font-bold hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+                        <i class="fas fa-arrow-right"></i> הקודם
                     </button>
-                    <button onclick="skipQuestion()" class="text-xs bg-amber-500 text-white px-3 py-1 rounded-lg hover:bg-amber-600">
-                        דלג <i class="fas fa-forward mr-1"></i>
+                    <button id="skip-btn" onclick="skipQuestion()" class="flex items-center gap-2 bg-amber-100 text-amber-700 px-4 py-2 rounded-xl font-bold hover:bg-amber-200 transition-all">
+                        דלג <i class="fas fa-forward"></i>
                     </button>
                 </div>
-                <div class="text-sm font-bold text-slate-500" id="progress-text"></div>
-                <div class="text-lg font-black text-slate-700">דיוק: <span id="score" class="text-blue-600">0%</span></div>
+                
+                <div id="progress-text" class="text-sm font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-full"></div>
+                
+                <div class="text-lg font-black text-slate-700">דיוק: <span id="score" class="text-green-600">0%</span></div>
             </div>
 
-            <div class="monitor-bg">
-                <div id="ecg-container"></div>
+            <div class="monitor-bg shadow-inner">
+                <div id="ecg-container" class="w-full"></div>
             </div>
 
             <div id="options-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
 
-            <div id="feedback-panel" class="hidden bg-white p-6 rounded-2xl shadow-2xl border-2 border-slate-200">
+            <div id="feedback-panel" class="hidden bg-white p-6 rounded-2xl shadow-2xl border-2 border-slate-200 animate-bounce-short">
                 <h2 id="feedback-title" class="text-2xl font-black mb-2"></h2>
-                <div id="clinical-info" class="text-slate-700 bg-slate-50 p-4 rounded-xl mb-4 text-sm border-r-4 border-blue-400"></div>
-                <button onclick="loadNextQuestion()" class="w-full bg-slate-900 text-white py-5 rounded-2xl font-black text-xl shadow-lg active:scale-95 transition-transform">לסטריפ הבא >></button>
+                <div id="clinical-info" class="text-slate-700 bg-slate-50 p-4 rounded-xl mb-4 text-sm border-r-4 border-blue-400 leading-relaxed"></div>
+                <button id="next-btn" onclick="loadNextQuestion()" class="w-full bg-slate-900 text-white py-5 rounded-2xl font-black text-xl shadow-lg active:scale-95 transition-transform hover:bg-black">
+                    לסטריפ הבא >>
+                </button>
             </div>
         </div>
     </div>
 
     <script>
-        let quizData = [];
-        let history = []; // שמירת שאלות שכבר ענינו עליהן
-        let currentQuestionIndex = -1;
+        let quizData = [];      // המאגר הכללי של השאלות שטרם הוצגו
+        let history = [];       // השאלות שהוצגו כבר (לניווט אחורה)
+        let currentIdx = -1;    // האינדקס הנוכחי בתוך ה-history
         let allAnswersList = [];
         let stats = { correct: 0, total: 0 };
+
+        async function updateProgress(val) {
+            const bar = document.getElementById('progress-bar');
+            const text = document.getElementById('load-percentage');
+            bar.style.width = val + '%';
+            text.innerText = val + '%';
+            // השהיה קטנה כדי שהעין תראה את התנועה
+            await new Promise(r => setTimeout(r, 20));
+        }
 
         async function processDocx(event) {
             const file = event.target.files[0];
@@ -91,11 +104,10 @@
             
             const reader = new FileReader();
             reader.onload = async (e) => {
-                const arrayBuffer = e.target.result;
                 try {
-                    updateProgress(10);
-                    const result = await mammoth.convertToHtml({ arrayBuffer });
-                    updateProgress(30);
+                    await updateProgress(15);
+                    const result = await mammoth.convertToHtml({ arrayBuffer: e.target.result });
+                    await updateProgress(40);
                     await parseHTMLAsync(result.value);
                 } catch (err) {
                     alert("שגיאה בקריאת הקובץ");
@@ -103,11 +115,6 @@
                 }
             };
             reader.readAsArrayBuffer(file);
-        }
-
-        function updateProgress(val) {
-            document.getElementById('progress-bar').style.width = val + '%';
-            document.getElementById('load-percentage').innerText = val + '%';
         }
 
         async function parseHTMLAsync(html) {
@@ -118,9 +125,9 @@
             const elements = Array.from(container.children);
 
             for (let i = 0; i < elements.length; i++) {
-                if (i % 5 === 0) {
-                    updateProgress(30 + Math.round((i / elements.length) * 70));
-                    await new Promise(r => setTimeout(r, 1));
+                if (i % 10 === 0) {
+                    let p = 40 + Math.round((i / elements.length) * 60);
+                    await updateProgress(p);
                 }
 
                 const img = elements[i].querySelector('img') || (elements[i].tagName === 'IMG' ? elements[i] : null);
@@ -132,7 +139,7 @@
                 if (currentItem && text) {
                     if (text.includes("הפרעת קצב:")) {
                         currentItem.answer = text.split("הפרעת קצב:")[1].trim();
-                    } else if (text.length > 3 && !text.includes("הפרעת קצב")) {
+                    } else if (text.length > 2 && !text.includes("הפרעת קצב")) {
                         currentItem.details.push(text);
                     }
                 }
@@ -146,42 +153,74 @@
                 document.getElementById('upload-card').classList.add('hidden');
                 document.getElementById('game-card').classList.remove('hidden');
                 loadNextQuestion();
+            } else {
+                alert("לא נמצאו נתונים תקינים. וודא שבקובץ מופיע המשפט 'הפרעת קצב:'");
+                location.reload();
             }
         }
 
         function loadNextQuestion() {
-            if (quizData.length === 0) {
-                alert("סיימת את כל המאגר!");
-                location.reload();
+            // אם אנחנו באמצע ההיסטוריה ולוחצים "הבא", פשוט מתקדמים בתוך ההיסטוריה
+            if (currentIdx < history.length - 1) {
+                currentIdx++;
+                renderQuestion(history[currentIdx]);
                 return;
             }
 
-            // בחירת שאלה אקראית
-            const idx = Math.floor(Math.random() * quizData.length);
-            const question = quizData.splice(idx, 1)[0]; // הסרה מהמאגר
+            // אם הגענו לסוף ההיסטוריה, שולפים שאלה חדשה מהמאגר
+            if (quizData.length === 0) {
+                alert("השלמת את כל המאגר!");
+                return;
+            }
+
+            const randomIdx = Math.floor(Math.random() * quizData.length);
+            const question = quizData.splice(randomIdx, 1)[0];
             
-            history.push(question); // הוספה להיסטוריה
-            currentQuestionIndex = history.length - 1;
-            
+            history.push(question);
+            currentIdx = history.length - 1;
             renderQuestion(question);
-            updateNavButtons();
+        }
+
+        function loadPreviousQuestion() {
+            if (currentIdx > 0) {
+                currentIdx--;
+                renderQuestion(history[currentIdx]);
+            }
+        }
+
+        function skipQuestion() {
+            // מוציאים מההיסטוריה (כי לא ענינו) ומחזירים למאגר
+            const currentQ = history.splice(currentIdx, 1)[0];
+            quizData.push(currentQ);
+            
+            if (quizData.length > 0) {
+                loadNextQuestion();
+            } else if (history.length > 0) {
+                currentIdx = Math.max(0, currentIdx - 1);
+                renderQuestion(history[currentIdx]);
+            }
         }
 
         function renderQuestion(question) {
             document.getElementById('feedback-panel').classList.add('hidden');
             document.getElementById('ecg-container').innerHTML = `<img src="${question.img}" class="strip-img">`;
-            document.getElementById('progress-text').innerText = `נותרו במאגר: ${quizData.length}`;
+            document.getElementById('progress-text').innerText = `סטריפ ${currentIdx + 1} מתוך ${history.length + quizData.length}`;
+            
+            // עדכון כפתור הקודם
+            document.getElementById('prev-btn').disabled = (currentIdx === 0);
 
+            // יצירת מסיחים
             let options = [question.answer];
             let distractors = allAnswersList.filter(a => a !== question.answer)
-                .sort(() => 0.5 - Math.random()).slice(0, 3);
+                                          .sort(() => 0.5 - Math.random())
+                                          .slice(0, 3);
             options = [...options, ...distractors].sort(() => 0.5 - Math.random());
 
             const grid = document.getElementById('options-grid');
             grid.innerHTML = '';
             options.forEach(opt => {
                 const btn = document.createElement('button');
-                btn.className = "option-btn bg-white p-4 rounded-xl font-bold text-slate-800 shadow-sm";
+                btn.className = "option-btn bg-white p-4 rounded-xl font-bold text-slate-800 shadow-sm text-right";
                 btn.innerText = opt;
                 btn.onclick = () => checkResult(btn, opt, question);
                 grid.appendChild(btn);
@@ -193,58 +232,30 @@
             btns.forEach(b => b.disabled = true);
             
             stats.total++;
-            const isCorrect = selected === correctObj.answer;
+            const isCorrect = (selected === correctObj.answer);
 
             if (isCorrect) {
                 stats.correct++;
                 btn.classList.add('correct');
-                document.getElementById('feedback-title').innerText = "נכון מאוד!";
+                document.getElementById('feedback-title').innerText = "כל הכבוד! 🎯";
                 document.getElementById('feedback-title').className = "text-2xl font-black mb-2 text-green-600";
-                confetti({ particleCount: 30 });
+                confetti({ particleCount: 40, spread: 70, origin: { y: 0.8 } });
             } else {
                 btn.classList.add('wrong');
-                document.getElementById('feedback-title').innerText = "טעות...";
+                document.getElementById('feedback-title').innerText = "טעות, שים לב...";
                 document.getElementById('feedback-title').className = "text-2xl font-black mb-2 text-red-600";
-                btns.forEach(b => { if(b.innerText === correctObj.answer) b.classList.add('correct'); });
+                btns.forEach(b => {
+                    if (b.innerText === correctObj.answer) b.classList.add('correct');
+                });
             }
 
             document.getElementById('clinical-info').innerHTML = `
                 <div class="font-black text-blue-800 text-lg mb-1">${correctObj.answer}</div>
-                ${correctObj.details.map(d => `<div class="py-0.5">• ${d}</div>`).join('')}
+                ${correctObj.details.length > 0 ? correctObj.details.map(d => `<div>• ${d}</div>`).join('') : 'אין פירוט נוסף לסטריפ זה.'}
             `;
             
             document.getElementById('feedback-panel').classList.remove('hidden');
             document.getElementById('score').innerText = Math.round((stats.correct / stats.total) * 100) + "%";
-        }
-
-        function skipQuestion() {
-            // במידה ומדלגים, אנחנו מחזירים את השאלה הנוכחית לסוף המערך כדי שתחזור מתישהו
-            if (currentQuestionIndex > -1) {
-                const currentQ = history.pop();
-                quizData.push(currentQ);
-            }
-            loadNextQuestion();
-        }
-
-        function loadPreviousQuestion() {
-            if (currentQuestionIndex > 0) {
-                currentQuestionIndex--;
-                const prevQ = history[currentQuestionIndex];
-                renderQuestion(prevQ);
-                updateNavButtons();
-            }
-        }
-
-        function updateNavButtons() {
-            const prevBtn = document.getElementById('prev-btn');
-            if (currentQuestionIndex > 0) {
-                prevBtn.disabled = false;
-                prevBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                prevBtn.classList.add('hover:bg-slate-700');
-            } else {
-                prevBtn.disabled = true;
-                prevBtn.classList.add('opacity-50', 'cursor-not-allowed');
-            }
         }
     </script>
 </body>
