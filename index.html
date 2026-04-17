@@ -3,104 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>סימולטור אק"ג - גרסה יציבה</title>
+    <title>סימולטור אק"ג - גרסה סופית</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
     <style>
-        body { background-color: #0f172a; color: white; margin: 0; padding-top: 80px; font-family: sans-serif; }
-        
-        /* סרגל ניווט עליון קבוע - מבטיח נראות */
-        .sticky-header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 70px;
-            background: #1e293b;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 20px;
-            z-index: 1000;
-            border-bottom: 2px solid #334155;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        }
-
-        .nav-btn {
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            border: none;
-            color: white;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .btn-prev { background-color: #475569; }
-        .btn-prev:disabled { opacity: 0.3; cursor: not-allowed; }
-        .btn-skip { background-color: #d97706; }
-
+        body { background-color: #0f172a; color: white; font-family: sans-serif; padding: 20px; }
         .monitor-wrap { background: #000; border: 4px solid #334155; border-radius: 1rem; overflow: hidden; margin-bottom: 20px; }
-        .strip-img { width: 100%; max-height: 300px; object-fit: contain; background: white; }
-        
+        .strip-img { width: 100%; max-height: 350px; object-fit: contain; background: white; }
         .option-btn { 
-            background: #1e293b; 
-            border: 2px solid #334155; 
-            padding: 15px; 
-            border-radius: 12px; 
-            text-align: right; 
-            font-weight: bold;
-            cursor: pointer;
-            width: 100%;
-            margin-bottom: 10px;
+            background: #1e293b; border: 2px solid #334155; padding: 20px; 
+            border-radius: 12px; text-align: right; font-weight: bold;
+            cursor: pointer; width: 100%; color: white; font-size: 1.1rem;
         }
         .correct { background: #16a34a !important; border-color: #22c55e !important; }
         .wrong { background: #dc2626 !important; border-color: #ef4444 !important; }
-        
+        .nav-control-btn {
+            padding: 12px 24px; border-radius: 10px; font-weight: bold;
+            cursor: pointer; border: none; color: white; font-size: 1rem;
+            display: flex; align-items: center; gap: 8px; transition: opacity 0.2s;
+        }
+        .btn-prev { background-color: #475569; }
+        .btn-skip { background-color: #d97706; }
+        .nav-control-btn:disabled { opacity: 0.3; cursor: not-allowed; }
         .hidden { display: none !important; }
-        #loading-bar { width: 0%; height: 100%; background: #3b82f6; transition: width 0.2s; }
     </style>
 </head>
 <body>
 
-    <div id="game-header" class="sticky-header hidden">
-        <div style="display: flex; gap: 10px;">
-            <button id="prev-btn" class="nav-btn btn-prev" onclick="loadPreviousQuestion()">
-                <i class="fas fa-arrow-right"></i> חזור
-            </button>
-            <button id="skip-btn" class="nav-btn btn-skip" onclick="skipQuestion()">
-                דלג <i class="fas fa-forward"></i>
-            </button>
-        </div>
-        <div id="progress-text" style="font-weight: 900; color: #60a5fa;"></div>
-        <div style="font-weight: bold;">ציון: <span id="score" style="color: #4ade80;">0%</span></div>
-    </div>
-
-    <div class="max-w-4xl mx-auto p-4">
-        <div id="upload-card" class="bg-slate-800 p-8 rounded-2xl text-center border border-slate-700">
-            <h1 class="text-2xl font-bold mb-4">סימולטור אק"ג - העלאת קובץ</h1>
+    <div class="max-w-4xl mx-auto">
+        <div id="upload-card" class="bg-slate-800 p-10 rounded-3xl text-center border border-slate-700 shadow-2xl">
+            <h1 class="text-3xl font-black mb-6">סימולטור אק"ג לפרמדיקים</h1>
             <input type="file" id="docx-file" accept=".docx" class="hidden" onchange="processDocx(event)">
-            <button onclick="document.getElementById('docx-file').click()" class="bg-blue-600 px-8 py-3 rounded-full font-bold">בחר קובץ DOCX</button>
-            
-            <div id="loading-area" class="hidden mt-6">
-                <div class="w-full bg-gray-700 h-4 rounded-full overflow-hidden">
-                    <div id="loading-bar"></div>
-                </div>
-                <p id="load-pct" class="mt-2">0%</p>
-            </div>
+            <button onclick="document.getElementById('docx-file').click()" class="bg-blue-600 hover:bg-blue-700 text-white px-12 py-4 rounded-full font-bold text-xl transition-all">
+                טען קובץ DOCX
+            </button>
         </div>
 
         <div id="game-card" class="hidden">
-            <div class="monitor-wrap"><div id="ecg-container"></div></div>
-            <div id="options-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+            <div class="flex justify-between items-center mb-4 px-2">
+                <div id="progress-text" class="text-blue-400 font-black text-lg"></div>
+                <div class="font-bold text-lg">דיוק: <span id="score" class="text-green-400">0%</span></div>
+            </div>
 
-            <div id="feedback-panel" class="hidden bg-slate-800 p-6 rounded-2xl border-2 border-blue-500 mt-4">
-                <h2 id="feedback-title" class="text-xl font-bold mb-2"></h2>
-                <div id="clinical-info" class="bg-slate-900 p-4 rounded-lg mb-4 text-sm"></div>
-                <button onclick="loadNextQuestion()" class="w-full bg-blue-600 py-4 rounded-xl font-bold text-lg">לסטריפ הבא >></button>
+            <div class="monitor-wrap">
+                <div id="ecg-container"></div>
+            </div>
+
+            <div id="options-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6"></div>
+
+            <div class="flex gap-4 mb-8 justify-center">
+                <button id="prev-btn" class="nav-control-btn btn-prev" onclick="loadPreviousQuestion()">
+                    <i class="fas fa-arrow-right"></i> חזור לסטריפ הקודם
+                </button>
+                <button id="skip-btn" class="nav-control-btn btn-skip" onclick="skipQuestion()">
+                    דלג לסטריפ הבא <i class="fas fa-forward"></i>
+                </button>
+            </div>
+
+            <div id="feedback-panel" class="hidden bg-slate-800 p-6 rounded-2xl border-2 border-blue-500 shadow-2xl">
+                <h2 id="feedback-title" class="text-2xl font-black mb-2"></h2>
+                <div id="clinical-info" class="bg-slate-900 p-4 rounded-lg mb-4 text-slate-300 border-r-4 border-blue-500"></div>
+                <button onclick="loadNextQuestion()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-5 rounded-xl font-black text-xl">
+                    המשך לסטריפ הבא >>
+                </button>
             </div>
         </div>
     </div>
@@ -109,48 +76,41 @@
         let quizData = [], history = [], currentIdx = -1, allAnswersList = [];
         let stats = { correct: 0, total: 0 };
 
-        async function processDocx(event) {
+        function processDocx(event) {
             const file = event.target.files[0];
             if (!file) return;
-            document.getElementById('loading-area').classList.remove('hidden');
             const reader = new FileReader();
             reader.onload = async (e) => {
                 const result = await mammoth.convertToHtml({ arrayBuffer: e.target.result });
-                await parseHTML(result.value);
+                parseHTML(result.value);
             };
             reader.readAsArrayBuffer(file);
         }
 
-        async function parseHTML(html) {
+        function parseHTML(html) {
             const container = document.createElement('div');
             container.innerHTML = html;
             const elements = Array.from(container.children);
             let items = [], currentItem = null;
 
-            for (let i = 0; i < elements.length; i++) {
-                const pct = Math.round((i / elements.length) * 100);
-                document.getElementById('loading-bar').style.width = pct + '%';
-                document.getElementById('load-pct').innerText = pct + '%';
-                if (i % 20 === 0) await new Promise(r => setTimeout(r, 1));
-
-                const img = elements[i].querySelector('img') || (elements[i].tagName === 'IMG' ? elements[i] : null);
+            elements.forEach(el => {
+                const img = el.querySelector('img') || (el.tagName === 'IMG' ? el : null);
                 if (img) {
                     if (currentItem) items.push(currentItem);
                     currentItem = { img: img.src, answer: "", details: [], options: null, userSelected: null };
                 }
-                const text = elements[i].textContent.trim();
+                const text = el.textContent.trim();
                 if (currentItem && text) {
                     if (text.includes("הפרעת קצב:")) currentItem.answer = text.split("הפרעת קצב:")[1].trim();
                     else if (text.length > 2 && !text.includes("הפרעת קצב")) currentItem.details.push(text);
                 }
-            }
+            });
             if (currentItem) items.push(currentItem);
             quizData = items.filter(i => i.img && i.answer);
             allAnswersList = [...new Set(quizData.map(i => i.answer))];
 
             if (quizData.length > 0) {
                 document.getElementById('upload-card').classList.add('hidden');
-                document.getElementById('game-header').classList.remove('hidden');
                 document.getElementById('game-card').classList.remove('hidden');
                 loadNextQuestion();
             }
@@ -181,10 +141,8 @@
             const q = history.splice(currentIdx, 1)[0];
             q.userSelected = null;
             quizData.push(q);
-            if (history.length > 0 && currentIdx < history.length) {
-                renderQuestion(history[currentIdx]);
-            } else if (history.length > 0) {
-                currentIdx--;
+            if (history.length > 0) {
+                currentIdx = Math.max(0, currentIdx - 1);
                 renderQuestion(history[currentIdx]);
             } else {
                 currentIdx = -1;
@@ -197,9 +155,10 @@
             document.getElementById('ecg-container').innerHTML = `<img src="${q.img}" class="strip-img">`;
             document.getElementById('progress-text').innerText = `שאלה ${currentIdx + 1}`;
             document.getElementById('prev-btn').disabled = (currentIdx === 0);
-
+            
             const grid = document.getElementById('options-grid');
             grid.innerHTML = '';
+            
             q.options.forEach(opt => {
                 const btn = document.createElement('button');
                 btn.className = 'option-btn';
@@ -214,6 +173,7 @@
                 }
                 grid.appendChild(btn);
             });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function checkResult(btn, selected, q) {
@@ -235,8 +195,9 @@
         function showFeedback(q) {
             const panel = document.getElementById('feedback-panel');
             panel.classList.remove('hidden');
-            document.getElementById('feedback-title').innerText = (q.userSelected === q.answer) ? "נכון!" : "טעות...";
-            document.getElementById('clinical-info').innerHTML = `<b>${q.answer}</b><br>${q.details.join('<br>')}`;
+            document.getElementById('feedback-title').innerText = (q.userSelected === q.answer) ? "נכון מאוד! 🎯" : "טעות... ❌";
+            document.getElementById('clinical-info').innerHTML = `<b>פענוח: ${q.answer}</b><br>${q.details.join('<br>')}`;
+            panel.scrollIntoView({ behavior: 'smooth' });
         }
     </script>
 </body>
