@@ -3,228 +3,228 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>מאסטר האק"ג - אמריקאי</title>
+    <title>מאסטר האק"ג - גרסת הפרמדיק</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            min-height: 100vh;
-            font-family: system-ui, -apple-system, sans-serif;
-            background: linear-gradient(135deg, #f97316 0%, #ec4899 30%, #a855f7 60%, #6366f1 80%, #3b82f6 100%);
-        }
-        #upload-card { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
-        .upload-inner { background: rgba(255,255,255,0.18); backdrop-filter: blur(16px); border-radius: 2rem; padding: 3rem 2.5rem; text-align: center; max-width: 500px; width: 100%; border: 2px solid rgba(255,255,255,0.35); }
-        #drop-zone { border: 3px dashed rgba(255,255,255,0.5); border-radius: 1.5rem; padding: 2.5rem 1rem; cursor: pointer; margin-bottom: 1.5rem; }
-        .upload-btn { background: #fff; color: #7c3aed; padding: .75rem 2.5rem; border-radius: 999px; font-weight: 800; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
-        .load-track { width: 100%; height: 14px; background: rgba(255,255,255,0.25); border-radius: 999px; overflow: hidden; }
-        .load-fill { height: 100%; background: #fff; border-radius: 999px; width: 0%; transition: width .25s ease; }
-        #game-card { display: none; min-height: 100vh; flex-direction: column; }
-        .top-bar { display: flex; align-items: center; justify-content: space-between; padding: .75rem 1.25rem; }
-        .btn-skip-top { background: #fff; color: #d97706; border-radius: 999px; padding: .45rem 1.2rem; font-weight: 800; cursor: pointer; }
-        .btn-prev-top { background: rgba(255,255,255,0.2); color: #fff; border: 2px solid rgba(255,255,255,0.5); border-radius: 999px; padding: .45rem 1.2rem; font-weight: 800; cursor: pointer; }
-        .btn-prev-top:disabled { opacity: .35; cursor: not-allowed; }
-        .progress-pill { background: #fff; color: #7c3aed; font-weight: 900; padding: .4rem 1.2rem; border-radius: 999px; }
-        .content-area { flex: 1; background: rgba(255, 230, 180, 0.45); margin: .75rem 1rem 1rem; border-radius: 1.5rem; padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem; }
-        .monitor-wrap { background: #111827; border-radius: 1.2rem; overflow: hidden; border: 4px solid #1f2937; }
-        .strip-img { width: 100%; max-height: 320px; object-fit: contain; background: #fff; display: block; }
-        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .85rem; }
-        @media (max-width: 500px) { .options-grid { grid-template-columns: 1fr; } }
-        .option-btn { background: rgba(255,255,255,0.92); border: 2px solid rgba(255,255,255,0.6); border-radius: 1rem; padding: 1.1rem .9rem; font-weight: 600; cursor: pointer; text-align: center; }
-        .correct { background: #22c55e !important; color: #fff !important; border-color: #16a34a !important; }
-        .wrong { background: #ef4444 !important; color: #fff !important; border-color: #dc2626 !important; }
-        .feedback-panel { background: rgba(255,255,255,0.95); border-radius: 1.2rem; padding: 1.25rem; display: none; }
-        .feedback-panel.show { display: block; }
-        #clinical-info { background: #f8fafc; border-right: 4px solid #8b5cf6; padding: .9rem; font-size: .9rem; margin-bottom: 1rem; }
-        #next-btn { width: 100%; background: #1e293b; color: #fff; border-radius: 1rem; padding: 1rem; font-weight: 900; cursor: pointer; }
+        body { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); min-height: 100vh; font-family: system-ui, sans-serif; color: white; }
+        .monitor-wrap { background: #000; border: 4px solid #334155; border-radius: 1rem; overflow: hidden; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        .strip-img { width: 100%; max-height: 350px; object-fit: contain; background: white; }
+        .option-btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); transition: all 0.2s; color: white; }
+        .option-btn:hover:not(:disabled) { background: rgba(255,255,255,0.15); border-color: #3b82f6; }
+        .correct { background: #16a34a !important; border-color: #22c55e !important; color: white !important; }
+        .wrong { background: #dc2626 !important; border-color: #ef4444 !important; color: white !important; }
+        #loading-bar-fill { width: 0%; transition: width 0.3s ease; }
         .hidden { display: none !important; }
     </style>
 </head>
-<body>
+<body class="p-4">
 
-<div id="upload-card">
-    <div class="upload-inner">
-        <i class="fas fa-heart-pulse" style="font-size:3.5rem;color:#fff;margin-bottom:1rem;display:block;"></i>
-        <h1 class="text-white text-2xl font-black mb-2">מאסטר האק"ג</h1>
-        <p>העלו קובץ Word הכולל תמונות והטקסט "הפרעת קצב:"</p>
-        <div id="drop-zone" onclick="document.getElementById('docx-file').click()">
-            <p>לחץ כאן לבחירת קובץ DOCX</p>
-            <input type="file" id="docx-file" accept=".docx" class="hidden" onchange="processDocx(event)">
-            <span class="upload-btn">בחר קובץ מהמחשב</span>
-        </div>
-        <div id="loading-area" class="hidden">
-            <div style="display:flex;justify-content:space-between;color:white;margin-bottom:5px">
-                <span id="load-label">מעבד...</span>
-                <span id="load-pct">0%</span>
-            </div>
-            <div class="load-track"><div id="progress-bar" class="load-fill"></div></div>
-        </div>
-    </div>
-</div>
-
-<div id="game-card">
-    <div class="top-bar">
-        <button id="prev-btn" class="btn-prev-top" onclick="loadPreviousQuestion()" disabled>חזור</button>
-        <div class="progress-pill" id="progress-text"></div>
-        <div style="display:flex;align-items:center;gap:10px">
-            <span class="text-white font-bold">ציון: <span id="score" class="text-yellow-300">0%</span></span>
-            <button id="skip-btn" class="btn-skip-top" onclick="skipQuestion()">דלג</button>
-        </div>
-    </div>
-    <div class="content-area">
-        <div class="monitor-wrap"><div id="ecg-container"></div></div>
-        <div class="options-grid" id="options-grid"></div>
-        <div class="feedback-panel" id="feedback-panel">
-            <h2 id="feedback-title" class="font-black text-xl mb-2"></h2>
-            <div id="clinical-info"></div>
-            <button id="next-btn" onclick="loadNextQuestion()">לסטריפ הבא >></button>
-        </div>
-    </div>
-</div>
-
-<script>
-    let quizData = [], history = [], currentIdx = -1, allAnswersList = [];
-    let stats = { correct: 0, total: 0 };
-
-    async function updateProgress(val, label) {
-        document.getElementById('progress-bar').style.width = val + '%';
-        document.getElementById('load-pct').innerText = val + '%';
-        if (label) document.getElementById('load-label').innerText = label;
-        await new Promise(r => setTimeout(r, 20));
-    }
-
-    async function processDocx(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        document.getElementById('drop-zone').classList.add('hidden');
-        document.getElementById('loading-area').classList.remove('hidden');
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            try {
-                const result = await mammoth.convertToHtml({ arrayBuffer: e.target.result });
-                await parseHTMLAsync(result.value);
-            } catch (err) { alert("שגיאה בקובץ"); location.reload(); }
-        };
-        reader.readAsArrayBuffer(file);
-    }
-
-    async function parseHTMLAsync(html) {
-        const container = document.createElement('div'); container.innerHTML = html;
-        const items = []; let currentItem = null;
-        const elements = Array.from(container.children);
-        for (let i = 0; i < elements.length; i++) {
-            if (i % 10 === 0) await updateProgress(Math.round((i/elements.length)*100), "מנתח...");
-            const img = elements[i].querySelector('img') || (elements[i].tagName === 'IMG' ? elements[i] : null);
-            if (img) {
-                if (currentItem) items.push(currentItem);
-                currentItem = { img: img.src, answer: "", details: [], options: null, userSelected: null };
-            }
-            const text = elements[i].textContent.trim();
-            if (currentItem && text) {
-                if (text.includes("הפרעת קצב:")) currentItem.answer = text.split("הפרעת קצב:")[1].trim();
-                else if (text.length > 2 && !text.includes("הפרעת קצב")) currentItem.details.push(text);
-            }
-        }
-        if (currentItem) items.push(currentItem);
-        quizData = items.filter(i => i.img && i.answer);
-        allAnswersList = [...new Set(quizData.map(i => i.answer))];
-        if (quizData.length > 0) {
-            document.getElementById('upload-card').classList.add('hidden');
-            document.getElementById('game-card').style.display = 'flex';
-            loadNextQuestion();
-        }
-    }
-
-    function loadNextQuestion() {
-        if (currentIdx < history.length - 1) {
-            currentIdx++;
-            renderQuestion(history[currentIdx]);
-            return;
-        }
-        if (quizData.length === 0) { alert("זהו, סיימנו!"); return; }
-        const q = quizData.splice(Math.floor(Math.random() * quizData.length), 1)[0];
-        // הגרלת מסיחים פעם אחת בלבד ושמירה שלהם בשאלה
-        q.options = [q.answer, ...allAnswersList.filter(a => a !== q.answer).sort(() => .5 - Math.random()).slice(0, 3)].sort(() => .5 - Math.random());
-        history.push(q);
-        currentIdx = history.length - 1;
-        renderQuestion(q);
-    }
-
-    function loadPreviousQuestion() {
-        if (currentIdx > 0) {
-            currentIdx--;
-            renderQuestion(history[currentIdx]);
-        }
-    }
-
-    function skipQuestion() {
-        const q = history.splice(currentIdx, 1)[0];
-        q.userSelected = null; // איפוס בחירה אם דילגנו
-        quizData.push(q);
-        if (quizData.length > 0 || currentIdx < history.length) {
-            if (currentIdx >= history.length) currentIdx--;
-            loadNextQuestion();
-        } else { location.reload(); }
-    }
-
-    function renderQuestion(q) {
-        document.getElementById('feedback-panel').classList.remove('show');
-        document.getElementById('ecg-container').innerHTML = `<img src="${q.img}" class="strip-img">`;
-        document.getElementById('progress-text').innerText = `שאלה ${currentIdx + 1}`;
-        document.getElementById('prev-btn').disabled = (currentIdx === 0);
-
-        const grid = document.getElementById('options-grid');
-        grid.innerHTML = '';
-        q.options.forEach(opt => {
-            const btn = document.createElement('button');
-            btn.className = 'option-btn';
-            btn.innerText = opt;
+    <div class="max-w-4xl mx-auto">
+        <div id="upload-card" class="bg-slate-800 p-8 rounded-3xl shadow-2xl text-center border border-slate-700 mt-10">
+            <i class="fas fa-file-word text-6xl text-blue-400 mb-4"></i>
+            <h1 class="text-3xl font-black mb-2">סימולטור אק"ג</h1>
+            <p class="text-slate-400 mb-8">העלה קובץ Word עם הסטריפים והפענוחים</p>
             
-            // שחזור מצב אם השאלה כבר נענתה
-            if (q.userSelected !== null) {
-                btn.disabled = true;
-                if (opt === q.answer) btn.classList.add('correct');
-                if (opt === q.userSelected && opt !== q.answer) btn.classList.add('wrong');
-                showFeedback(q);
-            } else {
-                btn.onclick = () => checkResult(btn, opt, q);
+            <input type="file" id="docx-file" accept=".docx" class="hidden" onchange="processDocx(event)">
+            <button onclick="document.getElementById('docx-file').click()" class="bg-blue-600 hover:bg-blue-700 text-white px-10 py-4 rounded-full font-bold text-xl shadow-lg transition-all">
+                בחר קובץ DOCX
+            </button>
+
+            <div id="loading-area" class="hidden mt-8 space-y-4">
+                <div class="flex justify-between text-sm font-bold">
+                    <span>מעבד נתונים...</span>
+                    <span id="load-pct">0%</span>
+                </div>
+                <div class="w-full bg-slate-700 rounded-full h-3">
+                    <div id="loading-bar-fill" class="bg-blue-500 h-3 rounded-full"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="game-card" class="hidden space-y-4">
+            <div class="flex justify-between items-center bg-slate-800 p-4 rounded-2xl border border-slate-700">
+                <div class="flex gap-2">
+                    <button id="prev-btn" onclick="loadPreviousQuestion()" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg font-bold disabled:opacity-30 disabled:cursor-not-allowed">
+                        <i class="fas fa-arrow-right ml-1"></i> חזור
+                    </button>
+                    <button id="skip-btn" onclick="skipQuestion()" class="bg-amber-600 hover:bg-amber-700 px-4 py-2 rounded-lg font-bold">
+                        דלג <i class="fas fa-forward mr-1"></i>
+                    </button>
+                </div>
+                <div id="progress-text" class="text-blue-400 font-black"></div>
+                <div class="font-bold">דיוק: <span id="score" class="text-green-400">0%</span></div>
+            </div>
+
+            <div class="monitor-wrap">
+                <div id="ecg-container"></div>
+            </div>
+
+            <div id="options-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+
+            <div id="feedback-panel" class="hidden bg-slate-800 p-6 rounded-2xl border-2 border-blue-500 shadow-2xl">
+                <h2 id="feedback-title" class="text-2xl font-black mb-2"></h2>
+                <div id="clinical-info" class="bg-slate-900 p-4 rounded-xl mb-4 text-slate-300 border-r-4 border-blue-500"></div>
+                <button onclick="loadNextQuestion()" class="w-full bg-blue-600 hover:bg-blue-700 py-4 rounded-xl font-black text-xl transition-all">
+                    לסטריפ הבא >>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let quizData = [], history = [], currentIdx = -1, allAnswersList = [];
+        let stats = { correct: 0, total: 0 };
+
+        async function processDocx(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            document.getElementById('loading-area').classList.remove('hidden');
+            
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const result = await mammoth.convertToHtml({ arrayBuffer: e.target.result });
+                await parseHTML(result.value);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        async function parseHTML(html) {
+            const container = document.createElement('div');
+            container.innerHTML = html;
+            const elements = Array.from(container.children);
+            let items = [], currentItem = null;
+
+            for (let i = 0; i < elements.length; i++) {
+                const pct = Math.round((i / elements.length) * 100);
+                document.getElementById('loading-bar-fill').style.width = pct + '%';
+                document.getElementById('load-pct').innerText = pct + '%';
+                if (i % 10 === 0) await new Promise(r => setTimeout(r, 1));
+
+                const img = elements[i].querySelector('img') || (elements[i].tagName === 'IMG' ? elements[i] : null);
+                if (img) {
+                    if (currentItem) items.push(currentItem);
+                    currentItem = { img: img.src, answer: "", details: [], options: null, userSelected: null };
+                }
+                const text = elements[i].textContent.trim();
+                if (currentItem && text) {
+                    if (text.includes("הפרעת קצב:")) currentItem.answer = text.split("הפרעת קצב:")[1].trim();
+                    else if (text.length > 2 && !text.includes("הפרעת קצב")) currentItem.details.push(text);
+                }
             }
-            grid.appendChild(btn);
-        });
-    }
+            if (currentItem) items.push(currentItem);
 
-    function checkResult(btn, selected, q) {
-        q.userSelected = selected;
-        document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
-        stats.total++;
-        if (selected === q.answer) {
-            stats.correct++;
-            btn.classList.add('correct');
-            confetti({ particleCount: 40, spread: 70, origin: { y: 0.8 } });
-        } else {
-            btn.classList.add('wrong');
-            document.querySelectorAll('.option-btn').forEach(b => { if(b.innerText === q.answer) b.classList.add('correct'); });
-        }
-        showFeedback(q);
-        document.getElementById('score').innerText = Math.round((stats.correct / stats.total) * 100) + "%";
-    }
+            quizData = items.filter(i => i.img && i.answer);
+            allAnswersList = [...new Set(quizData.map(i => i.answer))];
 
-    function showFeedback(q) {
-        const title = document.getElementById('feedback-title');
-        if (q.userSelected === q.answer) {
-            title.innerText = "נכון מאוד! 🎯";
-            title.style.color = "#16a34a";
-        } else {
-            title.innerText = "טעות, שים לב...";
-            title.style.color = "#dc2626";
+            if (quizData.length > 0) {
+                document.getElementById('upload-card').classList.add('hidden');
+                document.getElementById('game-card').classList.remove('hidden');
+                loadNextQuestion();
+            }
         }
-        document.getElementById('clinical-info').innerHTML = `<b>${q.answer}</b><br>${q.details.join('<br>')}`;
-        document.getElementById('feedback-panel').classList.add('show');
-    }
-</script>
+
+        function loadNextQuestion() {
+            // אם אנחנו חוזרים קדימה בהיסטוריה
+            if (currentIdx < history.length - 1) {
+                currentIdx++;
+                renderQuestion(history[currentIdx]);
+                return;
+            }
+
+            // בחירת שאלה חדשה
+            if (quizData.length === 0) { alert("סיימת את כל המאגר!"); return; }
+            const q = quizData.splice(Math.floor(Math.random() * quizData.length), 1)[0];
+            
+            // הגרלת אופציות
+            q.options = [q.answer, ...allAnswersList.filter(a => a !== q.answer).sort(() => 0.5 - Math.random()).slice(0, 3)].sort(() => 0.5 - Math.random());
+            
+            history.push(q);
+            currentIdx = history.length - 1;
+            renderQuestion(q);
+        }
+
+        function loadPreviousQuestion() {
+            if (currentIdx > 0) {
+                currentIdx--;
+                renderQuestion(history[currentIdx]);
+            }
+        }
+
+        function skipQuestion() {
+            // מוציאים מההיסטוריה ומחזירים למאגר
+            const q = history.splice(currentIdx, 1)[0];
+            q.userSelected = null;
+            quizData.push(q);
+            
+            if (history.length > 0 && currentIdx > 0) {
+                currentIdx--;
+                renderQuestion(history[currentIdx]);
+            } else if (quizData.length > 0) {
+                currentIdx = -1;
+                history = [];
+                loadNextQuestion();
+            } else { location.reload(); }
+        }
+
+        function renderQuestion(q) {
+            document.getElementById('feedback-panel').classList.add('hidden');
+            document.getElementById('ecg-container').innerHTML = `<img src="${q.img}" class="strip-img">`;
+            document.getElementById('progress-text').innerText = `שאלה ${currentIdx + 1}`;
+            document.getElementById('prev-btn').disabled = (currentIdx === 0);
+
+            const grid = document.getElementById('options-grid');
+            grid.innerHTML = '';
+            
+            q.options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn p-4 rounded-xl font-bold text-right';
+                btn.innerText = opt;
+                
+                if (q.userSelected !== null) {
+                    btn.disabled = true;
+                    if (opt === q.answer) btn.classList.add('correct');
+                    if (opt === q.userSelected && opt !== q.answer) btn.classList.add('wrong');
+                    showFeedback(q);
+                } else {
+                    btn.onclick = () => checkResult(btn, opt, q);
+                }
+                grid.appendChild(btn);
+            });
+        }
+
+        function checkResult(btn, selected, q) {
+            q.userSelected = selected;
+            document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+            stats.total++;
+            if (selected === q.answer) {
+                stats.correct++;
+                btn.classList.add('correct');
+                confetti({ particleCount: 50, spread: 70, origin: { y: 0.8 } });
+            } else {
+                btn.classList.add('wrong');
+                document.querySelectorAll('.option-btn').forEach(b => { if(b.innerText === q.answer) b.classList.add('correct'); });
+            }
+            document.getElementById('score').innerText = Math.round((stats.correct / stats.total) * 100) + "%";
+            showFeedback(q);
+        }
+
+        function showFeedback(q) {
+            const panel = document.getElementById('feedback-panel');
+            const title = document.getElementById('feedback-title');
+            panel.classList.remove('hidden');
+            
+            if (q.userSelected === q.answer) {
+                title.innerText = "נכון מאוד! 🎯";
+                title.className = "text-2xl font-black mb-2 text-green-400";
+            } else {
+                title.innerText = "טעות... שים לב";
+                title.className = "text-2xl font-black mb-2 text-red-400";
+            }
+            document.getElementById('clinical-info').innerHTML = `<b>${q.answer}</b><br>${q.details.join('<br>')}`;
+        }
+    </script>
 </body>
 </html>
-
-```
