@@ -3,71 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>מאסטר האק"ג - גרסת הפרמדיק</title>
+    <title>סימולטור אק"ג - גרסת הפרמדיק</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
     <style>
-        body { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); min-height: 100vh; font-family: system-ui, sans-serif; color: white; }
-        .monitor-wrap { background: #000; border: 4px solid #334155; border-radius: 1rem; overflow: hidden; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        body { background-color: #0f172a; color: white; min-height: 100vh; font-family: system-ui, sans-serif; }
+        .monitor-wrap { background: #000; border: 4px solid #334155; border-radius: 1rem; overflow: hidden; }
         .strip-img { width: 100%; max-height: 350px; object-fit: contain; background: white; }
-        .option-btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); transition: all 0.2s; color: white; }
-        .option-btn:hover:not(:disabled) { background: rgba(255,255,255,0.15); border-color: #3b82f6; }
-        .correct { background: #16a34a !important; border-color: #22c55e !important; color: white !important; }
-        .wrong { background: #dc2626 !important; border-color: #ef4444 !important; color: white !important; }
-        #loading-bar-fill { width: 0%; transition: width 0.3s ease; }
+        .option-btn { background: #1e293b; border: 2px solid #334155; transition: all 0.2s; }
+        .option-btn:hover:not(:disabled) { border-color: #3b82f6; background: #334155; }
+        .correct { background: #16a34a !important; border-color: #22c55e !important; }
+        .wrong { background: #dc2626 !important; border-color: #ef4444 !important; }
         .hidden { display: none !important; }
+        #loading-bar-fill { width: 0%; transition: width 0.3s ease; }
     </style>
 </head>
-<body class="p-4">
+<body class="p-4 md:p-8">
 
     <div class="max-w-4xl mx-auto">
-        <div id="upload-card" class="bg-slate-800 p-8 rounded-3xl shadow-2xl text-center border border-slate-700 mt-10">
-            <i class="fas fa-file-word text-6xl text-blue-400 mb-4"></i>
-            <h1 class="text-3xl font-black mb-2">סימולטור אק"ג</h1>
-            <p class="text-slate-400 mb-8">העלה קובץ Word עם הסטריפים והפענוחים</p>
+        <div id="upload-card" class="bg-slate-800 p-10 rounded-3xl shadow-2xl text-center border border-slate-700">
+            <i class="fas fa-heart-pulse text-6xl text-rose-500 mb-6"></i>
+            <h1 class="text-3xl font-black mb-4">סימולטור אק"ג לפרמדיקים</h1>
+            <p class="text-slate-400 mb-8">העלו קובץ Word הכולל תמונות ואת הכיתוב "הפרעת קצב:"</p>
             
             <input type="file" id="docx-file" accept=".docx" class="hidden" onchange="processDocx(event)">
-            <button onclick="document.getElementById('docx-file').click()" class="bg-blue-600 hover:bg-blue-700 text-white px-10 py-4 rounded-full font-bold text-xl shadow-lg transition-all">
+            <button onclick="document.getElementById('docx-file').click()" class="bg-blue-600 hover:bg-blue-700 text-white px-12 py-4 rounded-full font-bold text-xl transition-all shadow-lg">
                 בחר קובץ DOCX
             </button>
 
-            <div id="loading-area" class="hidden mt-8 space-y-4">
+            <div id="loading-area" class="hidden mt-10 space-y-4">
                 <div class="flex justify-between text-sm font-bold">
                     <span>מעבד נתונים...</span>
                     <span id="load-pct">0%</span>
                 </div>
-                <div class="w-full bg-slate-700 rounded-full h-3">
-                    <div id="loading-bar-fill" class="bg-blue-500 h-3 rounded-full"></div>
+                <div class="w-full bg-slate-700 rounded-full h-4">
+                    <div id="loading-bar-fill" class="bg-blue-500 h-4 rounded-full"></div>
                 </div>
             </div>
         </div>
 
-        <div id="game-card" class="hidden space-y-4">
-            <div class="flex justify-between items-center bg-slate-800 p-4 rounded-2xl border border-slate-700">
-                <div class="flex gap-2">
-                    <button id="prev-btn" onclick="loadPreviousQuestion()" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg font-bold disabled:opacity-30 disabled:cursor-not-allowed">
-                        <i class="fas fa-arrow-right ml-1"></i> חזור
+        <div id="game-card" class="hidden space-y-6">
+            <div class="flex flex-wrap justify-between items-center bg-slate-800 p-4 rounded-2xl border border-slate-700 gap-4">
+                <div class="flex gap-3">
+                    <button id="prev-btn" onclick="loadPreviousQuestion()" class="bg-slate-700 hover:bg-slate-600 text-white px-6 py-2 rounded-xl font-bold transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                        <i class="fas fa-arrow-right ml-2"></i>חזור
                     </button>
-                    <button id="skip-btn" onclick="skipQuestion()" class="bg-amber-600 hover:bg-amber-700 px-4 py-2 rounded-lg font-bold">
-                        דלג <i class="fas fa-forward mr-1"></i>
+                    <button id="skip-btn" onclick="skipQuestion()" class="bg-amber-600 hover:bg-amber-700 text-white px-6 py-2 rounded-xl font-bold transition-colors">
+                        דלג<i class="fas fa-forward mr-2"></i>
                     </button>
                 </div>
-                <div id="progress-text" class="text-blue-400 font-black"></div>
-                <div class="font-bold">דיוק: <span id="score" class="text-green-400">0%</span></div>
+                
+                <div id="progress-text" class="bg-blue-900/50 text-blue-400 px-4 py-2 rounded-full font-black"></div>
+                
+                <div class="text-lg font-bold">דיוק: <span id="score" class="text-green-400">0%</span></div>
             </div>
 
-            <div class="monitor-wrap">
+            <div class="monitor-wrap shadow-2xl">
                 <div id="ecg-container"></div>
             </div>
 
-            <div id="options-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+            <div id="options-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
 
-            <div id="feedback-panel" class="hidden bg-slate-800 p-6 rounded-2xl border-2 border-blue-500 shadow-2xl">
-                <h2 id="feedback-title" class="text-2xl font-black mb-2"></h2>
-                <div id="clinical-info" class="bg-slate-900 p-4 rounded-xl mb-4 text-slate-300 border-r-4 border-blue-500"></div>
-                <button onclick="loadNextQuestion()" class="w-full bg-blue-600 hover:bg-blue-700 py-4 rounded-xl font-black text-xl transition-all">
+            <div id="feedback-panel" class="hidden bg-slate-800 p-6 rounded-2xl border-2 border-blue-500 animate-in fade-in zoom-in duration-300">
+                <h2 id="feedback-title" class="text-2xl font-black mb-3"></h2>
+                <div id="clinical-info" class="bg-slate-900 p-5 rounded-xl mb-5 text-slate-300 border-r-4 border-blue-500 leading-relaxed"></div>
+                <button onclick="loadNextQuestion()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-5 rounded-xl font-black text-2xl shadow-xl transition-transform active:scale-95">
                     לסטריפ הבא >>
                 </button>
             </div>
@@ -110,8 +112,11 @@
                 }
                 const text = elements[i].textContent.trim();
                 if (currentItem && text) {
-                    if (text.includes("הפרעת קצב:")) currentItem.answer = text.split("הפרעת קצב:")[1].trim();
-                    else if (text.length > 2 && !text.includes("הפרעת קצב")) currentItem.details.push(text);
+                    if (text.includes("הפרעת קצב:")) {
+                        currentItem.answer = text.split("הפרעת קצב:")[1].trim();
+                    } else if (text.length > 2 && !text.includes("הפרעת קצב")) {
+                        currentItem.details.push(text);
+                    }
                 }
             }
             if (currentItem) items.push(currentItem);
@@ -127,18 +132,18 @@
         }
 
         function loadNextQuestion() {
-            // אם אנחנו חוזרים קדימה בהיסטוריה
             if (currentIdx < history.length - 1) {
                 currentIdx++;
                 renderQuestion(history[currentIdx]);
                 return;
             }
 
-            // בחירת שאלה חדשה
-            if (quizData.length === 0) { alert("סיימת את כל המאגר!"); return; }
+            if (quizData.length === 0) {
+                alert("כל הכבוד! סיימת את כל הסטריפים במאגר.");
+                return;
+            }
+
             const q = quizData.splice(Math.floor(Math.random() * quizData.length), 1)[0];
-            
-            // הגרלת אופציות
             q.options = [q.answer, ...allAnswersList.filter(a => a !== q.answer).sort(() => 0.5 - Math.random()).slice(0, 3)].sort(() => 0.5 - Math.random());
             
             history.push(q);
@@ -154,25 +159,24 @@
         }
 
         function skipQuestion() {
-            // מוציאים מההיסטוריה ומחזירים למאגר
             const q = history.splice(currentIdx, 1)[0];
             q.userSelected = null;
             quizData.push(q);
             
-            if (history.length > 0 && currentIdx > 0) {
-                currentIdx--;
-                renderQuestion(history[currentIdx]);
+            if (currentIdx < history.length) {
+                renderQuestion(history[currentIdx] || history[0]);
             } else if (quizData.length > 0) {
-                currentIdx = -1;
-                history = [];
                 loadNextQuestion();
             } else { location.reload(); }
         }
 
         function renderQuestion(q) {
+            // איפוס תצוגה
             document.getElementById('feedback-panel').classList.add('hidden');
             document.getElementById('ecg-container').innerHTML = `<img src="${q.img}" class="strip-img">`;
-            document.getElementById('progress-text').innerText = `שאלה ${currentIdx + 1}`;
+            document.getElementById('progress-text').innerText = `סטריפ ${currentIdx + 1} מתוך ${history.length + quizData.length}`;
+            
+            // עדכון כפתור חזור
             document.getElementById('prev-btn').disabled = (currentIdx === 0);
 
             const grid = document.getElementById('options-grid');
@@ -180,7 +184,7 @@
             
             q.options.forEach(opt => {
                 const btn = document.createElement('button');
-                btn.className = 'option-btn p-4 rounded-xl font-bold text-right';
+                btn.className = 'option-btn p-5 rounded-2xl font-bold text-right text-lg shadow-md';
                 btn.innerText = opt;
                 
                 if (q.userSelected !== null) {
@@ -199,14 +203,18 @@
             q.userSelected = selected;
             document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
             stats.total++;
+            
             if (selected === q.answer) {
                 stats.correct++;
                 btn.classList.add('correct');
-                confetti({ particleCount: 50, spread: 70, origin: { y: 0.8 } });
+                confetti({ particleCount: 60, spread: 80, origin: { y: 0.8 } });
             } else {
                 btn.classList.add('wrong');
-                document.querySelectorAll('.option-btn').forEach(b => { if(b.innerText === q.answer) b.classList.add('correct'); });
+                document.querySelectorAll('.option-btn').forEach(b => {
+                    if (b.innerText === q.answer) b.classList.add('correct');
+                });
             }
+            
             document.getElementById('score').innerText = Math.round((stats.correct / stats.total) * 100) + "%";
             showFeedback(q);
         }
@@ -217,13 +225,20 @@
             panel.classList.remove('hidden');
             
             if (q.userSelected === q.answer) {
-                title.innerText = "נכון מאוד! 🎯";
-                title.className = "text-2xl font-black mb-2 text-green-400";
+                title.innerText = "תשובה נכונה! 🎯";
+                title.className = "text-2xl font-black mb-3 text-green-400";
             } else {
-                title.innerText = "טעות... שים לב";
-                title.className = "text-2xl font-black mb-2 text-red-400";
+                title.innerText = "לא מדויק...";
+                title.className = "text-2xl font-black mb-3 text-red-400";
             }
-            document.getElementById('clinical-info').innerHTML = `<b>${q.answer}</b><br>${q.details.join('<br>')}`;
+            
+            document.getElementById('clinical-info').innerHTML = `
+                <div class="text-xl font-bold text-blue-400 mb-2">${q.answer}</div>
+                ${q.details.length > 0 ? q.details.map(d => `<div>• ${d}</div>`).join('') : 'אין פירוט נוסף.'}
+            `;
+            
+            // גלילה אוטומטית למטה כדי שהמשתמש יראה את המשוב
+            panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
     </script>
 </body>
