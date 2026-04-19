@@ -15,6 +15,7 @@
             min-height: 100vh;
             color: white;
             font-family: system-ui, -apple-system, sans-serif;
+            text-align: right;
         }
         .monitor-screen {
             background-color: #020617;
@@ -23,8 +24,6 @@
             border: 4px solid #475569;
             box-shadow: inset 0 0 50px rgba(0,0,0,1);
         }
-
-        /* אנימציית סינוס Lead II משופרת לתאימות */
         .ecg-loader {
             width: 100%;
             height: 100px;
@@ -39,16 +38,15 @@
             from { stroke-dashoffset: 1000; }
             to { stroke-dashoffset: 0; }
         }
-
         .option-btn { transition: all 0.2s; border: 2px solid rgba(255,255,255,0.1); }
         .option-btn:hover:not(:disabled) { transform: scale(1.02); background-color: rgba(255,255,255,0.05); }
         .option-correct { background-color: #059669 !important; border-color: #34d399 !important; }
         .option-wrong { background-color: #dc2626 !important; border-color: #f87171 !important; opacity: 0.7; }
     </style>
 </head>
-<body class="p-4 pb-24 text-right">
+<body class="p-4 pb-24">
 
-    <div id="top-bar" class="fixed top-0 left-0 w-full z-50 bg-slate-900 border-b-2 border-slate-700 p-3 flex justify-between items-center">
+    <div id="top-bar" class="fixed top-0 left-0 w-full z-50 bg-slate-900 border-b-2 border-slate-700 p-3 flex justify-between items-center shadow-2xl">
         <div class="flex items-center gap-4">
             <div class="bg-amber-500/20 border border-amber-500 px-4 py-1 rounded-full text-amber-400 font-black">
                 <i class="fas fa-coins ml-1"></i> <span id="money-display">50</span>$
@@ -88,7 +86,7 @@
         <div id="game-screen" class="hidden flex flex-col gap-6">
             <div class="monitor-screen rounded-3xl p-4 min-h-[250px] flex items-center justify-center relative overflow-hidden">
                 <div id="question-display" class="w-full h-full flex items-center justify-center"></div>
-                <div id="hint-text" class="absolute bottom-0 left-0 w-full bg-blue-900/90 p-3 text-sm text-center border-t border-blue-400 hidden"></div>
+                <div id="hint-text" class="absolute bottom-0 left-0 w-full bg-blue-900/95 p-3 text-sm text-center border-t border-blue-400 text-white font-bold hidden z-20"></div>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
@@ -116,33 +114,21 @@
     </div>
 
     <script>
-        let db = [], queue = [], history = [], currentIdx = -1, money = 50, stats = { correct: 0, total: 0 }, isAnswered = false, currentQuestionData = null;
+        let db = [], queue = [], history = [], money = 50, stats = { correct: 0, total: 0 }, isAnswered = false, currentQuestionData = null;
 
-        // תיקון לטאבלט: הפרדת הצגת הטעינה מהעיבוד
         function initUpload(e) {
             const file = e.target.files[0];
             if (!file) return;
-
-            // 1. קודם כל מציגים את מסך הטעינה
             document.getElementById('start-screen').classList.add('hidden');
             document.getElementById('loading-screen').classList.remove('hidden');
-
-            // 2. מחכים 100 מילישניות כדי לתת לדפדפן זמן לצייר את המסך, ורק אז מעבדים
-            setTimeout(() => {
-                handleFileUpload(file);
-            }, 100);
+            setTimeout(() => handleFileUpload(file), 100);
         }
 
         async function handleFileUpload(file) {
             const reader = new FileReader();
             reader.onload = async (event) => {
-                try {
-                    const { value } = await mammoth.convertToHtml({ arrayBuffer: event.target.result });
-                    processHTML(value);
-                } catch (err) {
-                    alert("שגיאה בקריאת הקובץ");
-                    location.reload();
-                }
+                const { value } = await mammoth.convertToHtml({ arrayBuffer: event.target.result });
+                processHTML(value);
             };
             reader.readAsArrayBuffer(file);
         }
@@ -155,30 +141,33 @@
             Array.from(doc.body.children).forEach(el => {
                 const img = el.querySelector('img') || (el.tagName === 'IMG' ? el : null);
                 if (img) {
-                    if (temp.img || temp.ans) db.push({...temp, id: db.length});
+                    if (temp.img && temp.ans) db.push({...temp, id: db.length});
                     temp = { img: img.src, ans: "", info: [] };
                 }
                 const text = el.textContent.trim();
-                if (text.includes("הפרעת קצב:")) temp.ans = text.split("הפרעת קצב:")[1].trim();
-                else if (text.match(/קצב|מרווח|גל|QRS/)) temp.info.push(text);
+                if (!text) return;
+
+                if (text.includes("הפרעת קצב:")) {
+                    temp.ans = text.split("הפרעת קצב:")[1].trim();
+                } else if (!text.includes("שאלה") && !text.includes("אק\"ג")) {
+                    // תיקון: כל טקסט שאינו כותרת או תשובה הופך לרמז
+                    temp.info.push(text);
+                }
             });
-            db.push(temp);
-            db = db.filter(i => i.img && i.ans);
+            if (temp.img && temp.ans) db.push({...temp, id: db.length});
             
+            db = db.filter(i => i.img && i.ans);
             queue = [...db].sort(() => Math.random() - 0.5);
             
-            // השהיה קלה בסיום כדי שלא "ייעלם" מהר מדי בטאבלטים מהירים
             setTimeout(() => {
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('game-screen').classList.remove('hidden');
                 loadNext();
-            }, 1500);
+            }, 1000);
         }
 
         function loadNext() {
-            if (queue.length === 0) {
-                queue = [...db].sort(() => Math.random() - 0.5);
-            }
+            if (queue.length === 0) queue = [...db].sort(() => Math.random() - 0.5);
             renderQuestion(queue.shift());
         }
 
@@ -227,9 +216,17 @@
 
         function useHint() {
             if (money < 10 || isAnswered) return;
+            // בדיקה אם בכלל יש מידע לרמז
+            const hintContent = currentQuestionData.info.filter(t => t.length > 2).join(" | ");
+            
+            if (!hintContent) {
+                alert("לסטריף הזה אין נתונים נוספים במאגר");
+                return;
+            }
+
             money -= 10;
             const hintBox = document.getElementById('hint-text');
-            hintBox.innerHTML = currentQuestionData.info.join(" | ") || "אין מידע נוסף";
+            hintBox.innerHTML = hintContent;
             hintBox.classList.remove('hidden');
             document.getElementById('btn-hint').disabled = true;
             updateUI();
