@@ -24,7 +24,7 @@
             box-shadow: inset 0 0 50px rgba(0,0,0,1);
         }
 
-        /* אנימציית סינוס Lead II */
+        /* אנימציית סינוס Lead II משופרת לתאימות */
         .ecg-loader {
             width: 100%;
             height: 100px;
@@ -33,59 +33,56 @@
             fill: none;
             stroke-dasharray: 1000;
             stroke-dashoffset: 1000;
-            animation: draw 3s linear infinite;
+            animation: draw 2.5s linear infinite;
         }
         @keyframes draw {
+            from { stroke-dashoffset: 1000; }
             to { stroke-dashoffset: 0; }
         }
 
         .option-btn { transition: all 0.2s; border: 2px solid rgba(255,255,255,0.1); }
         .option-btn:hover:not(:disabled) { transform: scale(1.02); background-color: rgba(255,255,255,0.05); }
-        .option-correct { background-color: #059669 !important; border-color: #34d399 !important; animation: pulse 0.5s; }
+        .option-correct { background-color: #059669 !important; border-color: #34d399 !important; }
         .option-wrong { background-color: #dc2626 !important; border-color: #f87171 !important; opacity: 0.7; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
     </style>
 </head>
-<body class="p-4 pb-24">
+<body class="p-4 pb-24 text-right">
 
-    <div id="top-bar" class="fixed top-0 left-0 w-full z-50 bg-slate-900 border-b-2 border-slate-700 p-3 flex justify-between items-center shadow-2xl">
+    <div id="top-bar" class="fixed top-0 left-0 w-full z-50 bg-slate-900 border-b-2 border-slate-700 p-3 flex justify-between items-center">
         <div class="flex items-center gap-4">
             <div class="bg-amber-500/20 border border-amber-500 px-4 py-1 rounded-full text-amber-400 font-black">
                 <i class="fas fa-coins ml-1"></i> <span id="money-display">50</span>$
             </div>
-            <div class="text-emerald-400 font-bold hidden sm:block">
+            <div class="text-emerald-400 font-bold">
                 דיוק: <span id="score-display">100%</span>
             </div>
         </div>
         <div class="bg-slate-800 px-4 py-1 rounded-full text-sm font-mono border border-slate-600">
             Q_ID: <span id="q-id-display">---</span>
         </div>
-        <button onclick="location.reload()" class="text-rose-400 hover:text-rose-300 text-sm font-bold">
-            <i class="fas fa-power-off"></i>
-        </button>
+        <button onclick="location.reload()" class="text-rose-400 font-bold"><i class="fas fa-power-off"></i></button>
     </div>
 
     <div class="max-w-4xl mx-auto mt-16">
         
         <div id="start-screen" class="bg-slate-800 p-8 rounded-3xl border-2 border-slate-700 text-center shadow-2xl mt-10">
             <i class="fas fa-file-word text-6xl text-blue-500 mb-6"></i>
-            <h1 class="text-3xl font-black mb-4">מאסטר האק"ג - תרגול אמריקאי</h1>
-            <p class="text-slate-400 mb-8">העלה קובץ DOCX כדי להתחיל</p>
-            <input type="file" id="docx-upload" accept=".docx" class="hidden" onchange="handleFileUpload(event)">
-            <button onclick="document.getElementById('docx-upload').click()" class="bg-blue-600 hover:bg-blue-500 px-10 py-4 rounded-full font-black text-xl shadow-lg transition-all">
+            <h1 class="text-3xl font-black mb-4">מאסטר האק"ג</h1>
+            <p class="text-slate-400 mb-8">העלה קובץ DOCX כדי להתחיל בתרגול</p>
+            <input type="file" id="docx-upload" accept=".docx" class="hidden" onchange="initUpload(event)">
+            <button onclick="document.getElementById('docx-upload').click()" class="bg-blue-600 hover:bg-blue-500 px-10 py-4 rounded-full font-black text-xl transition-all">
                 בחר קובץ והתחל
             </button>
         </div>
 
         <div id="loading-screen" class="hidden bg-slate-800 p-8 rounded-3xl border-2 border-slate-700 text-center shadow-2xl mt-10">
             <div class="monitor-screen rounded-xl p-6 mb-6 flex flex-col items-center justify-center">
-                <div class="text-emerald-500 font-mono text-sm mb-2 w-full text-left">LEAD II - ANALYSIS IN PROGRESS...</div>
+                <div class="text-emerald-500 font-mono text-xs mb-2 w-full text-left">ANALYZING CARDIAC DATA...</div>
                 <svg viewBox="0 0 200 100" class="ecg-loader">
                     <path d="M0,50 L40,50 L45,45 L50,50 L60,50 L65,20 L75,80 L80,50 L90,50 L100,40 L110,50 L150,50 L155,45 L160,50 L170,50 L175,20 L185,80 L190,50 L200,50" />
                 </svg>
             </div>
             <h2 class="text-2xl font-black text-emerald-400 animate-pulse">מנתח סטריפים...</h2>
-            <p class="text-slate-400 mt-2">טוען נתונים למוניטור</p>
         </div>
 
         <div id="game-screen" class="hidden flex flex-col gap-6">
@@ -108,10 +105,10 @@
             <div id="options-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
 
             <div class="flex justify-between items-center mt-4">
-                <button onclick="goBack()" id="btn-back" class="text-slate-400 hover:text-white disabled:opacity-0 transition-all">
+                <button onclick="goBack()" id="btn-back" class="text-slate-400 disabled:opacity-0">
                     <i class="fas fa-arrow-right ml-2"></i> חזור
                 </button>
-                <button onclick="skipQuestion()" class="bg-slate-700 px-6 py-2 rounded-xl text-sm font-bold hover:bg-slate-600">
+                <button onclick="skipQuestion()" class="bg-slate-700 px-6 py-2 rounded-xl text-sm font-bold">
                     דלג <i class="fas fa-forward mr-2 text-xs"></i>
                 </button>
             </div>
@@ -121,19 +118,31 @@
     <script>
         let db = [], queue = [], history = [], currentIdx = -1, money = 50, stats = { correct: 0, total: 0 }, isAnswered = false, currentQuestionData = null;
 
-        function handleFileUpload(e) {
+        // תיקון לטאבלט: הפרדת הצגת הטעינה מהעיבוד
+        function initUpload(e) {
             const file = e.target.files[0];
             if (!file) return;
 
-            // החלפה למסך טעינה
+            // 1. קודם כל מציגים את מסך הטעינה
             document.getElementById('start-screen').classList.add('hidden');
             document.getElementById('loading-screen').classList.remove('hidden');
 
+            // 2. מחכים 100 מילישניות כדי לתת לדפדפן זמן לצייר את המסך, ורק אז מעבדים
+            setTimeout(() => {
+                handleFileUpload(file);
+            }, 100);
+        }
+
+        async function handleFileUpload(file) {
             const reader = new FileReader();
             reader.onload = async (event) => {
-                const { value } = await mammoth.convertToHtml({ arrayBuffer: event.target.result });
-                // השהיה קטנה כדי שיראו את האנימציה היפה
-                setTimeout(() => processHTML(value), 2000);
+                try {
+                    const { value } = await mammoth.convertToHtml({ arrayBuffer: event.target.result });
+                    processHTML(value);
+                } catch (err) {
+                    alert("שגיאה בקריאת הקובץ");
+                    location.reload();
+                }
             };
             reader.readAsArrayBuffer(file);
         }
@@ -157,14 +166,17 @@
             db = db.filter(i => i.img && i.ans);
             
             queue = [...db].sort(() => Math.random() - 0.5);
-            document.getElementById('loading-screen').classList.add('hidden');
-            document.getElementById('game-screen').classList.remove('hidden');
-            loadNext();
+            
+            // השהיה קלה בסיום כדי שלא "ייעלם" מהר מדי בטאבלטים מהירים
+            setTimeout(() => {
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('game-screen').classList.remove('hidden');
+                loadNext();
+            }, 1500);
         }
 
         function loadNext() {
             if (queue.length === 0) {
-                alert("סיימת את המאגר!");
                 queue = [...db].sort(() => Math.random() - 0.5);
             }
             renderQuestion(queue.shift());
