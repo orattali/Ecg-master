@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>מאסטר האק"ג - גרסת הקזינו</title>
+    <title>מאסטר האק"ג - גרסת המוניטור</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -23,14 +23,24 @@
             border: 4px solid #475569;
             box-shadow: inset 0 0 50px rgba(0,0,0,1);
         }
-        .option-btn {
-            transition: all 0.2s;
-            border: 2px solid rgba(255,255,255,0.1);
+
+        /* אנימציית סינוס Lead II */
+        .ecg-loader {
+            width: 100%;
+            height: 100px;
+            stroke: #34d399;
+            stroke-width: 3;
+            fill: none;
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            animation: draw 3s linear infinite;
         }
-        .option-btn:hover:not(:disabled) {
-            transform: scale(1.02);
-            background-color: rgba(255,255,255,0.05);
+        @keyframes draw {
+            to { stroke-dashoffset: 0; }
         }
+
+        .option-btn { transition: all 0.2s; border: 2px solid rgba(255,255,255,0.1); }
+        .option-btn:hover:not(:disabled) { transform: scale(1.02); background-color: rgba(255,255,255,0.05); }
         .option-correct { background-color: #059669 !important; border-color: #34d399 !important; animation: pulse 0.5s; }
         .option-wrong { background-color: #dc2626 !important; border-color: #f87171 !important; opacity: 0.7; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
@@ -60,20 +70,28 @@
         <div id="start-screen" class="bg-slate-800 p-8 rounded-3xl border-2 border-slate-700 text-center shadow-2xl mt-10">
             <i class="fas fa-file-word text-6xl text-blue-500 mb-6"></i>
             <h1 class="text-3xl font-black mb-4">מאסטר האק"ג - תרגול אמריקאי</h1>
-            <p class="text-slate-400 mb-8">העלה קובץ DOCX עם 150 הסטריפים שלך כדי להתחיל</p>
+            <p class="text-slate-400 mb-8">העלה קובץ DOCX כדי להתחיל</p>
             <input type="file" id="docx-upload" accept=".docx" class="hidden" onchange="handleFileUpload(event)">
             <button onclick="document.getElementById('docx-upload').click()" class="bg-blue-600 hover:bg-blue-500 px-10 py-4 rounded-full font-black text-xl shadow-lg transition-all">
                 בחר קובץ והתחל
             </button>
         </div>
 
+        <div id="loading-screen" class="hidden bg-slate-800 p-8 rounded-3xl border-2 border-slate-700 text-center shadow-2xl mt-10">
+            <div class="monitor-screen rounded-xl p-6 mb-6 flex flex-col items-center justify-center">
+                <div class="text-emerald-500 font-mono text-sm mb-2 w-full text-left">LEAD II - ANALYSIS IN PROGRESS...</div>
+                <svg viewBox="0 0 200 100" class="ecg-loader">
+                    <path d="M0,50 L40,50 L45,45 L50,50 L60,50 L65,20 L75,80 L80,50 L90,50 L100,40 L110,50 L150,50 L155,45 L160,50 L170,50 L175,20 L185,80 L190,50 L200,50" />
+                </svg>
+            </div>
+            <h2 class="text-2xl font-black text-emerald-400 animate-pulse">מנתח סטריפים...</h2>
+            <p class="text-slate-400 mt-2">טוען נתונים למוניטור</p>
+        </div>
+
         <div id="game-screen" class="hidden flex flex-col gap-6">
-            
             <div class="monitor-screen rounded-3xl p-4 min-h-[250px] flex items-center justify-center relative overflow-hidden">
-                <div id="question-display" class="w-full h-full flex items-center justify-center">
-                    </div>
-                <div id="hint-text" class="absolute bottom-0 left-0 w-full bg-blue-900/90 p-3 text-sm text-center border-t border-blue-400 hidden animate-slide-up">
-                    </div>
+                <div id="question-display" class="w-full h-full flex items-center justify-center"></div>
+                <div id="hint-text" class="absolute bottom-0 left-0 w-full bg-blue-900/90 p-3 text-sm text-center border-t border-blue-400 hidden"></div>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
@@ -87,8 +105,7 @@
                 </button>
             </div>
 
-            <div id="options-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                </div>
+            <div id="options-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
 
             <div class="flex justify-between items-center mt-4">
                 <button onclick="goBack()" id="btn-back" class="text-slate-400 hover:text-white disabled:opacity-0 transition-all">
@@ -102,21 +119,21 @@
     </div>
 
     <script>
-        let db = [];
-        let queue = [];
-        let history = [];
-        let currentIdx = -1;
-        let money = 50;
-        let stats = { correct: 0, total: 0 };
-        let isAnswered = false;
+        let db = [], queue = [], history = [], currentIdx = -1, money = 50, stats = { correct: 0, total: 0 }, isAnswered = false, currentQuestionData = null;
 
-        async function handleFileUpload(e) {
+        function handleFileUpload(e) {
             const file = e.target.files[0];
             if (!file) return;
+
+            // החלפה למסך טעינה
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('loading-screen').classList.remove('hidden');
+
             const reader = new FileReader();
             reader.onload = async (event) => {
                 const { value } = await mammoth.convertToHtml({ arrayBuffer: event.target.result });
-                processHTML(value);
+                // השהיה קטנה כדי שיראו את האנימציה היפה
+                setTimeout(() => processHTML(value), 2000);
             };
             reader.readAsArrayBuffer(file);
         }
@@ -140,40 +157,31 @@
             db = db.filter(i => i.img && i.ans);
             
             queue = [...db].sort(() => Math.random() - 0.5);
-            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('loading-screen').classList.add('hidden');
             document.getElementById('game-screen').classList.remove('hidden');
             loadNext();
         }
 
         function loadNext() {
             if (queue.length === 0) {
-                alert("סיימת את כל המאגר! מתחילים מחדש.");
+                alert("סיימת את המאגר!");
                 queue = [...db].sort(() => Math.random() - 0.5);
             }
-            const q = queue.shift();
-            renderQuestion(q);
+            renderQuestion(queue.shift());
         }
 
         function renderQuestion(q) {
-            currentIdx++;
             isAnswered = false;
-            const currentQ = q;
-            
-            // UI Reset
-            document.getElementById('question-display').innerHTML = `<img src="${currentQ.img}" class="max-h-64 object-contain rounded-lg">`;
+            currentQuestionData = q;
+            document.getElementById('question-display').innerHTML = `<img src="${q.img}" class="max-h-64 object-contain rounded-lg">`;
             document.getElementById('hint-text').classList.add('hidden');
-            document.getElementById('q-id-display').innerText = (currentQ.id + 1).toString().padStart(3, '0');
+            document.getElementById('q-id-display').innerText = (q.id + 1).toString().padStart(3, '0');
             document.getElementById('btn-hint').disabled = false;
             document.getElementById('btn-5050').disabled = false;
             document.getElementById('btn-back').disabled = history.length === 0;
 
-            // Generate Options
-            const distractors = db.filter(item => item.ans !== currentQ.ans)
-                                  .sort(() => Math.random() - 0.5)
-                                  .slice(0, 3)
-                                  .map(i => i.ans);
-            
-            const options = [...distractors, currentQ.ans].sort(() => Math.random() - 0.5);
+            const distractors = db.filter(item => item.ans !== q.ans).sort(() => Math.random() - 0.5).slice(0, 3).map(i => i.ans);
+            const options = [...distractors, q.ans].sort(() => Math.random() - 0.5);
             
             const grid = document.getElementById('options-grid');
             grid.innerHTML = '';
@@ -181,33 +189,25 @@
                 const btn = document.createElement('button');
                 btn.className = 'option-btn bg-slate-800 p-4 rounded-2xl text-right font-bold text-lg';
                 btn.innerText = opt;
-                btn.onclick = () => checkAnswer(btn, opt, currentQ);
+                btn.onclick = () => checkAnswer(btn, opt, q);
                 grid.appendChild(btn);
             });
-
-            currentQuestionData = currentQ; // Save for helpers
         }
 
         function checkAnswer(btn, selected, q) {
             if (isAnswered) return;
             isAnswered = true;
             stats.total++;
-            
-            const allBtns = document.querySelectorAll('.option-btn');
             let isCorrect = (selected === q.ans);
-
             if (isCorrect) {
                 btn.classList.add('option-correct');
-                money += 15;
-                stats.correct++;
+                money += 15; stats.correct++;
                 confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
             } else {
                 btn.classList.add('option-wrong');
                 money = Math.max(0, money - 5);
-                // Show correct one
-                allBtns.forEach(b => { if(b.innerText === q.ans) b.classList.add('option-correct'); });
+                document.querySelectorAll('.option-btn').forEach(b => { if(b.innerText === q.ans) b.classList.add('option-correct'); });
             }
-
             history.push({ q, knewIt: isCorrect });
             updateUI();
             setTimeout(loadNext, 2000);
@@ -217,7 +217,7 @@
             if (money < 10 || isAnswered) return;
             money -= 10;
             const hintBox = document.getElementById('hint-text');
-            hintBox.innerHTML = currentQuestionData.info.join(" | ") || "אין מידע נוסף לסטריף זה";
+            hintBox.innerHTML = currentQuestionData.info.join(" | ") || "אין מידע נוסף";
             hintBox.classList.remove('hidden');
             document.getElementById('btn-hint').disabled = true;
             updateUI();
@@ -227,25 +227,19 @@
             if (money < 20 || isAnswered) return;
             money -= 20;
             const btns = Array.from(document.querySelectorAll('.option-btn'));
-            const wrongBtns = btns.filter(b => b.innerText !== currentQuestionData.ans);
-            const toRemove = wrongBtns.sort(() => Math.random() - 0.5).slice(0, 2);
-            toRemove.forEach(b => b.style.visibility = 'hidden');
+            btns.filter(b => b.innerText !== currentQuestionData.ans).sort(() => Math.random() - 0.5).slice(0, 2).forEach(b => b.style.visibility = 'hidden');
             document.getElementById('btn-5050').disabled = true;
             updateUI();
         }
 
-        function skipQuestion() {
-            queue.push(currentQuestionData); // לסוף התור
-            loadNext();
-        }
+        function skipQuestion() { queue.push(currentQuestionData); loadNext(); }
 
         function goBack() {
             if (history.length === 0) return;
             const last = history.pop();
-            if (last.knewIt) { stats.correct--; money -= 15; }
-            else { money += 5; }
+            if (last.knewIt) { stats.correct--; money -= 15; } else { money += 5; }
             stats.total--;
-            queue.unshift(last.q); // מחזיר לראש התור
+            queue.unshift(last.q);
             loadNext();
             updateUI();
         }
