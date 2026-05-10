@@ -6,74 +6,284 @@
     <title>מאסטר האק"ג - גרסת המוניטור</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    </head>
-<body class="bg-slate-900 text-white min-h-screen font-sans">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
+    
+    <style>
+        body {
+            background: linear-gradient(120deg, #1e293b 0%, #334155 100%);
+            min-height: 100vh;
+            color: white;
+            font-family: system-ui, -apple-system, sans-serif;
+            text-align: right;
+        }
+        .monitor-screen {
+            background-color: #020617;
+            background-image: linear-gradient(rgba(15, 118, 110, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(15, 118, 110, 0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+            border: 4px solid #475569;
+            box-shadow: inset 0 0 50px rgba(0,0,0,1);
+        }
+        .ecg-loader {
+            width: 100%;
+            height: 100px;
+            stroke: #34d399;
+            stroke-width: 3;
+            fill: none;
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            animation: draw 2.5s linear infinite;
+        }
+        @keyframes draw {
+            from { stroke-dashoffset: 1000; }
+            to { stroke-dashoffset: 0; }
+        }
+        .option-btn { transition: all 0.2s; border: 2px solid rgba(255,255,255,0.1); }
+        .option-btn:hover:not(:disabled) { transform: scale(1.02); background-color: rgba(255,255,255,0.05); }
+        .option-correct { background-color: #059669 !important; border-color: #34d399 !important; }
+        .option-wrong { background-color: #dc2626 !important; border-color: #f87171 !important; opacity: 0.7; }
+    </style>
+</head>
+<body class="p-4 pb-24">
+
+    <div id="top-bar" class="fixed top-0 left-0 w-full z-50 bg-slate-900 border-b-2 border-slate-700 p-3 flex justify-between items-center shadow-2xl">
+        <div class="flex items-center gap-4">
+            <div class="bg-amber-500/20 border border-amber-500 px-4 py-1 rounded-full text-amber-400 font-black">
+                <i class="fas fa-coins ml-1"></i> <span id="money-display">50</span>$
+            </div>
+            <div class="flex items-center gap-3 bg-slate-800/50 px-4 py-1 rounded-full border border-slate-700">
+                <div class="text-emerald-400 font-bold">
+                    דיוק: <span id="score-display">100%</span>
+                </div>
+                <div class="h-4 w-[1px] bg-slate-600 mx-1"></div>
+                <div class="text-emerald-500 font-bold flex items-center gap-1">
+                    <i class="fas fa-check-circle"></i> <span id="correct-count">0</span>
+                </div>
+                <div class="text-rose-500 font-bold flex items-center gap-1">
+                    <i class="fas fa-times-circle"></i> <span id="wrong-count">0</span>
+                </div>
+            </div>
+        </div>
+        <div class="bg-slate-800 px-4 py-1 rounded-full text-sm font-mono border border-slate-600">
+            Q_ID: <span id="q-id-display">---</span>
+        </div>
+        <button onclick="location.reload()" class="text-rose-400 font-bold"><i class="fas fa-power-off"></i></button>
+    </div>
+
+    <div class="max-w-4xl mx-auto mt-16">
+        
+        <div id="start-screen" class="bg-slate-800 p-8 rounded-3xl border-2 border-slate-700 text-center shadow-2xl mt-10">
+            <i class="fas fa-file-word text-6xl text-blue-500 mb-6"></i>
+            <h1 class="text-3xl font-black mb-4">מאסטר האק"ג</h1>
+            <p class="text-slate-400 mb-8">העלה קובץ DOCX כדי להתחיל בתרגול</p>
+            <input type="file" id="docx-upload" accept=".docx" class="hidden" onchange="initUpload(event)">
+            <button onclick="document.getElementById('docx-upload').click()" class="bg-blue-600 hover:bg-blue-500 px-10 py-4 rounded-full font-black text-xl transition-all">
+                בחר קובץ והתחל
+            </button>
+        </div>
+
+        <div id="loading-screen" class="hidden bg-slate-800 p-8 rounded-3xl border-2 border-slate-700 text-center shadow-2xl mt-10">
+            <div class="monitor-screen rounded-xl p-6 mb-6 flex flex-col items-center justify-center">
+                <div class="text-emerald-500 font-mono text-xs mb-2 w-full text-left">ANALYZING CARDIAC DATA...</div>
+                <svg viewBox="0 0 200 100" class="ecg-loader">
+                    <path d="M0,50 L40,50 L45,45 L50,50 L60,50 L65,20 L75,80 L80,50 L90,50 L100,40 L110,50 L150,50 L155,45 L160,50 L170,50 L175,20 L185,80 L190,50 L200,50" />
+                </svg>
+            </div>
+            <h2 class="text-2xl font-black text-emerald-400 animate-pulse">מנתח סטריפים...</h2>
+        </div>
+
+        <div id="game-screen" class="hidden flex flex-col gap-6">
+            <div class="monitor-screen rounded-3xl p-4 min-h-[250px] flex items-center justify-center relative overflow-hidden">
+                <div id="question-display" class="w-full h-full flex items-center justify-center"></div>
+                <div id="hint-text" class="absolute bottom-0 left-0 w-full bg-blue-900/95 p-3 text-sm text-center border-t border-blue-400 text-white font-bold hidden z-20"></div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <button id="btn-hint" onclick="useHint()" class="bg-slate-800 border border-blue-500/50 p-3 rounded-2xl flex items-center justify-center gap-2 hover:bg-slate-700 disabled:opacity-50">
+                    <i class="fas fa-lightbulb text-yellow-400"></i>
+                    <span>רמז (10$)</span>
+                </button>
+                <button id="btn-5050" onclick="use5050()" class="bg-slate-800 border border-purple-500/50 p-3 rounded-2xl flex items-center justify-center gap-2 hover:bg-slate-700 disabled:opacity-50">
+                    <i class="fas fa-columns text-purple-400"></i>
+                    <span>50/50 (20$)</span>
+                </button>
+            </div>
+
+            <div id="options-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+
+            <div class="flex justify-between items-center mt-4">
+                <button onclick="goBack()" id="btn-back" class="text-slate-400 disabled:opacity-0">
+                    <i class="fas fa-arrow-right ml-2"></i> חזור
+                </button>
+                <button onclick="skipQuestion()" class="bg-slate-700 px-6 py-2 rounded-xl text-sm font-bold">
+                    דלג <i class="fas fa-forward mr-2 text-xs"></i>
+                </button>
+            </div>
+        </div>
+    </div>
 
     <script>
-        // מאגר השאלות המקורי שלך (השאר אותו כפי שהוא)
-        const allQuestions = [
-            { id: 1, type: 'Normal Sinus', image: 'path/to/img1.jpg', options: ['Sinus', 'VT', 'VF'] },
-            // ... כל השאלות שלך
-        ];
+        let db = [], queue = [], history = [], money = 50, stats = { correct: 0, total: 0 }, isAnswered = false, currentQuestionData = null;
 
-        // משתני עזר לניהול הסבב הנוכחי
-        let shuffledQuestions = [];
-        let currentQuestionIndex = 0;
+        function initUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('loading-screen').classList.remove('hidden');
+            setTimeout(() => handleFileUpload(file), 100);
+        }
 
-        /**
-         * פונקציית ערבוב בשיטת Fisher-Yates
-         * מבטיחה סדר אקראי לחלוטין של המערך
-         */
+        async function handleFileUpload(file) {
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                const { value } = await mammoth.convertToHtml({ arrayBuffer: event.target.result });
+                processHTML(value);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
         function shuffleArray(array) {
-            let newArray = [...array];
-            for (let i = newArray.length - 1; i > 0; i--) {
+            for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
-                [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+                [array[i], array[j]] = [array[j], array[i]];
             }
-            return newArray;
+            return array;
         }
 
-        /**
-         * אתחול המבחן/תרגול
-         */
-        function initQuiz() {
-            // יצירת עותק מעורבב של השאלות
-            shuffledQuestions = shuffleArray(allQuestions);
-            currentQuestionIndex = 0;
-            loadNextQuestion();
-        }
+        function processHTML(html) {
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+            db = [];
+            let temp = { img: null, ans: "", info: [] };
 
-        /**
-         * טעינת השאלה הבאה מהתור המעורבב
-         */
-        function loadNextQuestion() {
-            // בדיקה אם נותרו שאלות במאגר המעורבב
-            if (currentQuestionIndex < shuffledQuestions.length) {
-                const currentQuestion = shuffledQuestions[currentQuestionIndex];
-                
-                // כאן תכניס את הלוגיקה הקיימת שלך להצגת השאלה
-                displayQuestion(currentQuestion);
-                
-                // קידום האינדקס לשאלה הבאה
-                currentQuestionIndex++;
-            } else {
-                // סיום המאגר
-                alert("כל הכבוד! עברת על כל השאלות במאגר.");
-                if (confirm("האם תרצה להתחיל סבב חדש (בסדר אקראי שונה)?")) {
-                    initQuiz();
+            Array.from(doc.body.children).forEach(el => {
+                const img = el.querySelector('img') || (el.tagName === 'IMG' ? el : null);
+                if (img) {
+                    if (temp.img && temp.ans) db.push({...temp, id: db.length});
+                    temp = { img: img.src, ans: "", info: [] };
                 }
+                const text = el.textContent.trim();
+                if (!text) return;
+
+                if (text.includes("הפרעת קצב:")) {
+                    temp.ans = text.split("הפרעת קצב:")[1].trim();
+                } else if (!text.includes("שאלה") && !text.includes("אק\"ג")) {
+                    temp.info.push(text);
+                }
+            });
+            if (temp.img && temp.ans) db.push({...temp, id: db.length});
+            
+            db = db.filter(i => i.img && i.ans);
+            
+            // ערבוב ראשוני של התור
+            queue = shuffleArray([...db]);
+            
+            setTimeout(() => {
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('game-screen').classList.remove('hidden');
+                loadNext();
+            }, 1000);
+        }
+
+        function loadNext() {
+            if (queue.length === 0) {
+                alert("סיימת את כל השאלות במאגר! מתחילים סבב חדש ומעורבב.");
+                queue = shuffleArray([...db]);
             }
+            renderQuestion(queue.shift());
         }
 
-        function displayQuestion(question) {
-            // הפונקציה הקיימת שלך שמעדכנת את ה-UI (תמונה, כפתורים וכו')
-            console.log("מציג שאלה:", question.id);
-            // למשל: document.getElementById('ecg-image').src = question.image;
+        function renderQuestion(q) {
+            isAnswered = false;
+            currentQuestionData = q;
+            document.getElementById('question-display').innerHTML = `<img src="${q.img}" class="max-h-64 object-contain rounded-lg">`;
+            document.getElementById('hint-text').classList.add('hidden');
+            document.getElementById('q-id-display').innerText = (q.id + 1).toString().padStart(3, '0');
+            document.getElementById('btn-hint').disabled = false;
+            document.getElementById('btn-5050').disabled = false;
+            document.getElementById('btn-back').disabled = history.length === 0;
+
+            const distractors = db.filter(item => item.ans !== q.ans);
+            const randomDistractors = shuffleArray([...distractors]).slice(0, 3).map(i => i.ans);
+            const options = shuffleArray([...randomDistractors, q.ans]);
+            
+            const grid = document.getElementById('options-grid');
+            grid.innerHTML = '';
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn bg-slate-800 p-4 rounded-2xl text-right font-bold text-lg';
+                btn.innerText = opt;
+                btn.onclick = () => checkAnswer(btn, opt, q);
+                grid.appendChild(btn);
+            });
         }
 
-        // הפעלה ראשונית
-        window.onload = initQuiz;
+        function checkAnswer(btn, selected, q) {
+            if (isAnswered) return;
+            isAnswered = true;
+            stats.total++;
+            let isCorrect = (selected === q.ans);
+            if (isCorrect) {
+                btn.classList.add('option-correct');
+                money += 15; stats.correct++;
+                confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
+            } else {
+                btn.classList.add('option-wrong');
+                money = Math.max(0, money - 5);
+                document.querySelectorAll('.option-btn').forEach(b => { if(b.innerText === q.ans) b.classList.add('option-correct'); });
+            }
+            history.push({ q, knewIt: isCorrect });
+            updateUI();
+            setTimeout(loadNext, 2000);
+        }
 
+        function useHint() {
+            if (money < 10 || isAnswered) return;
+            const hintContent = currentQuestionData.info.filter(t => t.length > 2).join(" | ");
+            if (!hintContent) {
+                alert("לסטריף הזה אין נתונים נוספים במאגר");
+                return;
+            }
+            money -= 10;
+            const hintBox = document.getElementById('hint-text');
+            hintBox.innerHTML = hintContent;
+            hintBox.classList.remove('hidden');
+            document.getElementById('btn-hint').disabled = true;
+            updateUI();
+        }
+
+        function use5050() {
+            if (money < 20 || isAnswered) return;
+            money -= 20;
+            const btns = Array.from(document.querySelectorAll('.option-btn'));
+            const wrongBtns = btns.filter(b => b.innerText !== currentQuestionData.ans);
+            shuffleArray(wrongBtns).slice(0, 2).forEach(b => b.style.visibility = 'hidden');
+            document.getElementById('btn-5050').disabled = true;
+            updateUI();
+        }
+
+        function skipQuestion() { 
+            // מחזירים את השאלה לסוף התור המעורבב כדי שלא תלך לאיבוד
+            queue.push(currentQuestionData); 
+            loadNext(); 
+        }
+
+        function goBack() {
+            if (history.length === 0) return;
+            const last = history.pop();
+            if (last.knewIt) { stats.correct--; money -= 15; } else { money += 5; }
+            stats.total--;
+            queue.unshift(last.q);
+            loadNext();
+            updateUI();
+        }
+
+        function updateUI() {
+            document.getElementById('money-display').innerText = money;
+            const score = stats.total === 0 ? 100 : Math.round((stats.correct / stats.total) * 100);
+            document.getElementById('score-display').innerText = score + "%";
+            document.getElementById('correct-count').innerText = stats.correct;
+            document.getElementById('wrong-count').innerText = stats.total - stats.correct;
+        }
     </script>
 </body>
 </html>
